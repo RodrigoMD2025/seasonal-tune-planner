@@ -8,47 +8,36 @@ import { useToast } from "@/hooks/use-toast";
 
 import { collection, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { EditScheduleDialog } from './EditScheduleDialog';
+// import { EditScheduleDialog } from './EditScheduleDialog'; // Removido por enquanto para simplificar
 
-// Interfaces para Firestore
-interface Period {
-  startDate: Date;
-  endDate: Date;
-  playlistTypes: string[]; // Alterado para array de strings
-  broadcast: string;
-}
-
+// Nova interface alinhada com a estrutura de dados achatada
 interface Schedule {
   id: string;
-  client: string; // Pode ser o nome do cliente ou o ID do documento do cliente
+  clientName: string;
   musicStyle: string;
-  periods: Period[];
+  startDate: string | Timestamp;
+  endDate: string | Timestamp;
+  playlistTypes: string[];
+  broadcast: string;
+  period: string;
   status: "draft" | "scheduled" | "active" | "completed" | "cancelled";
 }
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "active":
-      return "bg-christmas-green text-christmas-white";
-    case "scheduled":
-      return "bg-christmas-gold text-foreground";
-    case "completed":
-      return "bg-muted text-muted-foreground";
-    default:
-      return "bg-secondary text-secondary-foreground";
+    case "active": return "bg-christmas-green text-christmas-white";
+    case "scheduled": return "bg-christmas-gold text-foreground";
+    case "completed": return "bg-muted text-muted-foreground";
+    default: return "bg-secondary text-secondary-foreground";
   }
 };
 
 const getStatusText = (status: string) => {
   switch (status) {
-    case "active":
-      return "Ativo";
-    case "scheduled":
-      return "Agendado";
-    case "completed":
-      return "Finalizado";
-    default:
-      return status;
+    case "active": return "Ativo";
+    case "scheduled": return "Agendado";
+    case "completed": return "Finalizado";
+    default: return status;
   }
 };
 
@@ -59,7 +48,6 @@ const getBroadcastColor = (broadcast: string) => {
 };
 
 const getMusicStyleColor = (style: string) => {
-  // Todos os estilos musicais agora serão azuis
   return "bg-blue-500 text-white";
 };
 
@@ -67,29 +55,27 @@ export const ScheduleList = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [scheduleToEdit, setScheduleToEdit] = useState<Schedule | null>(null);
+  // const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  // const [scheduleToEdit, setScheduleToEdit] = useState<Schedule | null>(null);
   const { toast } = useToast();
 
   const fetchSchedules = async () => {
     try {
       setLoading(true);
-      const schedulesCollection = collection(db, "schedules"); // 'schedules' é o nome da coleção no Firestore
+      const schedulesCollection = collection(db, "schedules");
       const scheduleSnapshot = await getDocs(schedulesCollection);
-      const schedulesList = scheduleSnapshot.docs.map(doc => {
+      const schedulesList: Schedule[] = scheduleSnapshot.docs.map(doc => {
         const data = doc.data();
-        // Converte Timestamps para Date objects
-        const periods = data.periods.map((period: any) => ({
-          ...period,
-          startDate: period.startDate instanceof Timestamp ? period.startDate.toDate() : period.startDate,
-          endDate: period.endDate instanceof Timestamp ? period.endDate.toDate() : period.endDate,
-        }));
-
         return {
           id: doc.id,
-          ...data as Omit<Schedule, 'id' | 'periods'>,
-          periods: periods,
-        };
+          ...data
+        } as Schedule;
+      });
+      // Ordena por data de início mais recente
+      schedulesList.sort((a, b) => {
+        const dateA = a.startDate instanceof Timestamp ? a.startDate.toMillis() : new Date(a.startDate).getTime();
+        const dateB = b.startDate instanceof Timestamp ? b.startDate.toMillis() : new Date(b.startDate).getTime();
+        return dateB - dateA;
       });
       setSchedules(schedulesList);
     } catch (err) {
@@ -105,30 +91,21 @@ export const ScheduleList = () => {
   }, []);
 
   const handleDeleteSchedule = async (id: string) => {
-    if (!window.confirm("Tem certeza que deseja excluir este agendamento?")) {
-      return;
-    }
+    if (!window.confirm("Tem certeza que deseja excluir este agendamento?")) return;
     try {
       await deleteDoc(doc(db, "schedules", id));
-      toast({
-        title: "Sucesso!",
-        description: "Agendamento excluído com sucesso.",
-      });
-      fetchSchedules(); // Recarrega a lista após a exclusão
+      toast({ title: "Sucesso!", description: "Agendamento excluído com sucesso." });
+      fetchSchedules();
     } catch (err) {
       console.error("Erro ao excluir agendamento:", err);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir o agendamento. Tente novamente.",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Não foi possível excluir o agendamento.", variant: "destructive" });
     }
   };
 
-  const handleEditSchedule = (schedule: Schedule) => {
-    setScheduleToEdit(schedule);
-    setIsEditDialogOpen(true);
-  };
+  // const handleEditSchedule = (schedule: Schedule) => {
+  //   setScheduleToEdit(schedule);
+  //   setIsEditDialogOpen(true);
+  // };
 
   if (loading) {
     return (
@@ -140,11 +117,7 @@ export const ScheduleList = () => {
   }
 
   if (error) {
-    return (
-      <div className="p-6 text-center text-destructive">
-        <p>{error}</p>
-      </div>
-    );
+    return <div className="p-6 text-center text-destructive"><p>{error}</p></div>;
   }
 
   return (
@@ -164,72 +137,42 @@ export const ScheduleList = () => {
                 <div className="flex items-center gap-3">
                   <div>
                     <CardTitle className="text-base font-medium text-foreground">
-                      {schedule.client}
+                      {schedule.clientName} <span className="text-sm text-muted-foreground font-normal">- {schedule.period}</span>
                     </CardTitle>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge className={getMusicStyleColor(schedule.musicStyle)}>
-                        {schedule.musicStyle}
-                      </Badge>
-                      <Badge className={getStatusColor(schedule.status)}>
-                        {getStatusText(schedule.status)}
-                      </Badge>
+                      <Badge className={getMusicStyleColor(schedule.musicStyle)}>{schedule.musicStyle}</Badge>
+                      <Badge className={getStatusColor(schedule.status)}>{getStatusText(schedule.status)}</Badge>
+                      <Badge className={getBroadcastColor(schedule.broadcast)}>{schedule.broadcast}</Badge>
                     </div>
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" onClick={() => handleEditSchedule(schedule)}>
-                    <Edit className="w-4 h-4" />
-                  </Button>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="text-destructive hover:text-destructive"
-                    onClick={() => handleDeleteSchedule(schedule.id)}
-                  >
+                  {/* <Button variant="ghost" size="sm" onClick={() => handleEditSchedule(schedule)}><Edit className="w-4 h-4" /></Button> */}
+                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteSchedule(schedule.id)}>
                     <Trash2 className="w-4 h-4" />
                   </Button>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="space-y-3">
-                {schedule.periods.map((period, index) => (
-                  <div key={index} className="bg-muted/30 rounded-lg p-4 border border-border/30">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="text-sm font-medium text-foreground">
-                          Período {index + 1}
-                        </span>
-                      </div>
-                      <Badge className={getBroadcastColor(period.broadcast)}>
-                        {period.broadcast}
-                      </Badge>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                      <div className="flex flex-col items-start">
-                        <span className="text-muted-foreground">Início:</span>
-                        <div className="font-medium text-foreground">
-                          {formatDate(period.startDate)}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-start">
-                        <span className="text-muted-foreground">Término:</span>
-                        <div className="font-medium text-foreground">
-                          {formatDate(period.endDate)}
-                        </div>
-                      </div>
-                      <div className="flex flex-col items-start">
-                        <span className="text-muted-foreground">Tipo:</span>
-                        <div className="flex items-center gap-1 font-medium text-foreground">
-                          <Music className="w-3 h-3" />
-                          {period.playlistTypes.join(', ')}
-                        </div>
-                      </div>
+              <div className="bg-muted/30 rounded-lg p-4 border border-border/30">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                  <div className="flex flex-col items-start">
+                    <span className="text-muted-foreground">Início:</span>
+                    <div className="font-medium text-foreground">{formatDate(schedule.startDate)}</div>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-muted-foreground">Término:</span>
+                    <div className="font-medium text-foreground">{formatDate(schedule.endDate)}</div>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-muted-foreground">Tipo:</span>
+                    <div className="flex items-center gap-1 font-medium text-foreground">
+                      <Music className="w-3 h-3" />
+                      {schedule.playlistTypes.join(', ')}
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -240,22 +183,16 @@ export const ScheduleList = () => {
         <div className="text-center py-12">
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">Nenhum agendamento encontrado</h3>
-          <p className="text-muted-foreground mb-4">
-            Comece criando seu primeiro agendamento de playlist natalina
-          </p>
-          <Button className="bg-gradient-christmas shadow-christmas">
-            <Calendar className="w-4 h-4 mr-2" />
-            Criar Agendamento
-          </Button>
+          <p className="text-muted-foreground mb-4">Crie um agendamento para vê-lo aqui.</p>
         </div>
       )}
 
-      <EditScheduleDialog 
+      {/* <EditScheduleDialog 
         open={isEditDialogOpen} 
         onOpenChange={setIsEditDialogOpen}
         scheduleToEdit={scheduleToEdit}
         onScheduleUpdated={fetchSchedules}
-      />
+      /> */}
     </div>
   );
 };
