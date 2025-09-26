@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://[SEU_USUARIO_GITHUB].github.io/seasonal-tune-planner",
+  "homepage": "https://RodrigoMD2025.github.io/seasonal-tune-planner",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
