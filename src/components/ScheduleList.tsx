@@ -47,7 +47,7 @@ const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case "active": return "bg-green-500 text-white";
+    case "active": return "bg-green-700 text-white"; // Verde Escuro
     case "scheduled": return "bg-amber-500 text-white";
     case "completed": return "bg-muted text-muted-foreground";
     default: return "bg-secondary text-secondary-foreground";
@@ -66,7 +66,7 @@ const getStatusText = (status: string) => {
 const getBroadcastColor = (broadcast: string) => {
   return broadcast === "100% Natal" 
     ? "bg-christmas-red text-christmas-white"
-    : "bg-primary text-primary-foreground";
+    : "bg-indigo-600 text-white"; // Roxo/Lilás Forte
 };
 
 const getMusicStyleColor = (style: string) => {
