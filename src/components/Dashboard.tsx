@@ -167,7 +167,7 @@ const Dashboard = () => {
                   <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
                   <stat.icon className={`h-4 w-4 text-muted-foreground`} />
                 </CardHeader>
-                <CardContent className="flex-grow flex flex-col justify-between">
+                <CardContent className="flex-grow flex flex-col justify-start">
                   <div>
                     <div className="text-2xl font-bold text-foreground">{stat.value}</div>
                     <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
@@ -190,7 +190,7 @@ const Dashboard = () => {
                   )}
 
                   {stat.title === "Veiculação Natalinas" && stat.chartData && (
-                    <div className="h-[120px] w-full -mt-2">
+                    <div className="h-[120px] w-full mt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
@@ -199,7 +199,7 @@ const Dashboard = () => {
                           <Tooltip formatter={(value) => `${value} cliente(s)`} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="flex justify-center gap-4 text-xs">
+                      <div className="flex justify-center gap-4 text-xs mt-2">
                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_VEICULACAO[0] }} /><span>Veiculados</span></div>
                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_VEICULACAO[1] }} /><span>Não Veiculados</span></div>
                       </div>
@@ -207,7 +207,7 @@ const Dashboard = () => {
                   )}
 
                   {stat.title === "Clientes Agendados" && stat.chartData && (
-                    <div className="h-[120px] w-full -mt-2">
+                    <div className="h-[120px] w-full mt-2">
                       <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                           <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
@@ -216,7 +216,7 @@ const Dashboard = () => {
                           <Tooltip formatter={(value) => `${value} cliente(s)`} />
                         </PieChart>
                       </ResponsiveContainer>
-                      <div className="flex justify-center gap-4 text-xs">
+                      <div className="flex justify-center gap-4 text-xs mt-2">
                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_AGENDADOS[0] }} /><span>Agendados</span></div>
                         <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_AGENDADOS[1] }} /><span>Não Agendados</span></div>
                       </div>
