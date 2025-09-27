@@ -55,7 +55,7 @@ O sistema agora trata cada período como um agendamento independente, simplifica
 ```mermaid
 flowchart TD
     subgraph Dashboard
-        A[Clica em "Novo Agendamento"]
+        A[Clica em &quot;Novo Agendamento&quot;]
     end
 
     subgraph Diálogo de Criação
@@ -67,7 +67,7 @@ flowchart TD
 
     subgraph Lista de Agendamentos
         F[Novo card de agendamento aparece]
-        G[Clica em "Editar" em um card]
+        G[Clica em &quot;Editar&quot; em um card]
     end
     
     subgraph Diálogo de Edição
