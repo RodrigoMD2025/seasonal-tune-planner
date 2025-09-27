@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { collection, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { EditScheduleDialog } from './EditScheduleDialog';
-import { parse, isWithinInterval } from 'date-fns';
+import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 
 interface Schedule {
   id: string;
@@ -37,9 +37,22 @@ const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
   const today = new Date();
   const startDate = parseDate(schedule.startDate);
   const endDate = parseDate(schedule.endDate);
-  if (schedule.status === 'scheduled' && startDate && endDate && isWithinInterval(today, { start: startDate, end: endDate })) {
+  
+  if (!startDate || !endDate) return schedule.status;
+  
+  // Verifica se estamos dentro do período (incluindo o último dia até 23:59h)
+  const endOfLastDay = endOfDay(endDate);
+  const isActive = !isBefore(today, startDate) && !isAfter(today, endOfLastDay);
+  
+  if (schedule.status === 'scheduled' && isActive) {
     return 'active';
   }
+  
+  // Se passou do período final, marca como completado
+  if (schedule.status === 'active' && isAfter(today, endOfLastDay)) {
+    return 'completed';
+  }
+  
   return schedule.status;
 };
 

@@ -13,7 +13,7 @@ import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { getStartOfWeek, getEndOfWeek, isDateInCurrentWeek, formatDate } from '@/lib/date-utils';
-import { parse, isWithinInterval } from 'date-fns';
+import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 
 interface Schedule {
   id: string;
@@ -80,8 +80,13 @@ const Dashboard = () => {
         allSchedules.forEach(s => {
           const startDate = parseDate(s.startDate);
           const endDate = parseDate(s.endDate);
-          if (startDate && endDate && isWithinInterval(today, { start: startDate, end: endDate })) {
-            activeClients.add(s.client);
+          if (startDate && endDate) {
+            // Verifica se estamos dentro do período (incluindo o último dia até 23:59h)
+            const endOfLastDay = endOfDay(endDate);
+            const isActive = !isBefore(today, startDate) && !isAfter(today, endOfLastDay);
+            if (isActive) {
+              activeClients.add(s.client);
+            }
           }
         });
         const activeClientsCount = activeClients.size;
