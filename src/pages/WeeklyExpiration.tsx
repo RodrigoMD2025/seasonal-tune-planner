@@ -20,6 +20,7 @@ interface Schedule {
   broadcast?: string;
   playlistTypes?: string[];
   validadeTratada?: boolean;
+  veiculacaoTratada?: boolean;
   status?: "draft" | "scheduled" | "active" | "completed" | "cancelled";
 }
 
@@ -126,6 +127,22 @@ const WeeklyExpirationPage = () => {
     }
   };
 
+  const handleToggleBroadcastTreated = async (scheduleId: string, currentStatus: boolean) => {
+    const newStatus = !currentStatus;
+    // Atualiza a UI otimisticamente
+    setBroadcastSchedules(broadcastSchedules.map(s => s.id === scheduleId ? { ...s, veiculacaoTratada: newStatus } : s));
+
+    try {
+      const scheduleRef = doc(db, 'schedules', scheduleId);
+      await updateDoc(scheduleRef, { veiculacaoTratada: newStatus });
+    } catch (err) {
+      console.error("Erro ao atualizar status de veiculação:", err);
+      // Reverte em caso de erro
+      setBroadcastSchedules(broadcastSchedules.map(s => s.id === scheduleId ? { ...s, veiculacaoTratada: currentStatus } : s));
+      // TODO: Adicionar toast de erro
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active": return "bg-green-700 text-white";
@@ -147,7 +164,7 @@ const WeeklyExpirationPage = () => {
   const currentSchedules = activeTab === 'expiring' ? expiringSchedules : broadcastSchedules;
   const pendingCount = activeTab === 'expiring' 
     ? expiringSchedules.filter(s => !s.validadeTratada).length
-    : broadcastSchedules.filter(s => getDynamicStatus(s) === 'active').length;
+    : broadcastSchedules.filter(s => !s.veiculacaoTratada).length;
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -161,7 +178,7 @@ const WeeklyExpirationPage = () => {
               {pendingCount} / {currentSchedules.length}
             </p>
             <p className="text-sm text-muted-foreground">
-              {activeTab === 'expiring' ? 'Pendentes / Total Expirando' : 'Ativas / Total em Veiculação'}
+              {activeTab === 'expiring' ? 'Pendentes / Total Expirando' : 'Pendentes / Total em Veiculação'}
             </p>
           </div>
         </div>
@@ -225,7 +242,7 @@ const WeeklyExpirationPage = () => {
                         <TableHead>Estilo/Transmissão</TableHead>
                       </>
                     )}
-                    {activeTab === 'expiring' && <TableHead className="text-right">Ação</TableHead>}
+                    <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -235,8 +252,11 @@ const WeeklyExpirationPage = () => {
                       return (
                         <TableRow 
                           key={schedule.id} 
-                          data-state={activeTab === 'expiring' && schedule.validadeTratada ? 'treated' : 'untreated'} 
-                          className={activeTab === 'expiring' ? "data-[state=treated]:text-muted-foreground data-[state=treated]:line-through" : ""}
+                          data-state={(
+                            (activeTab === 'expiring' && schedule.validadeTratada) || 
+                            (activeTab === 'broadcasting' && schedule.veiculacaoTratada)
+                          ) ? 'treated' : 'untreated'} 
+                          className="data-[state=treated]:text-muted-foreground data-[state=treated]:line-through"
                         >
                           <TableCell className="font-medium">{schedule.clientName}</TableCell>
                           <TableCell><Badge variant="secondary">{schedule.period}</Badge></TableCell>
@@ -274,13 +294,34 @@ const WeeklyExpirationPage = () => {
                               </TableCell>
                             </>
                           )}
+                          
+                          {/* Coluna de Ação - sempre presente */}
+                          <TableCell className="text-right">
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => activeTab === 'expiring' 
+                                ? handleToggleTreated(schedule.id, !!schedule.validadeTratada)
+                                : handleToggleBroadcastTreated(schedule.id, !!schedule.veiculacaoTratada)
+                              }
+                            >
+                              {(
+                                (activeTab === 'expiring' && schedule.validadeTratada) ||
+                                (activeTab === 'broadcasting' && schedule.veiculacaoTratada)
+                              ) ? (
+                                <><Undo2 className="w-4 h-4 mr-2" />Desmarcar</>
+                              ) : (
+                                <><CheckCircle className="w-4 h-4 mr-2 text-green-500" />Marcar como Tratado</>
+                              )}
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       );
                     })
                   ) : (
                     <TableRow>
                       <TableCell 
-                        colSpan={activeTab === 'expiring' ? 4 : 5} 
+                        colSpan={activeTab === 'expiring' ? 4 : 6} 
                         className="text-center h-24 text-muted-foreground"
                       >
                         {activeTab === 'expiring' 

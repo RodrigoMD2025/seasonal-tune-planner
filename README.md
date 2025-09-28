@@ -33,7 +33,9 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
   - **Validades da Semana:** Agendamentos que expiram na semana atual
   - **Veiculações da Semana:** Agendamentos ativos ou em período de veiculação
 - ✅ **Sistema de Abas Intuitivo:** Navegação rápida entre os dois módulos
-- ✅ **Fluxo de Tratamento:** Marque validades como "tratadas" com um clique
+- ✅ **Fluxos de Tratamento Duplos:** 
+  - Validades: Marque como "tratadas" quando resolvidas
+  - Veiculações: Marque como "tratadas" quando verificadas/confirmadas
 - ✅ **Acompanhamento Visual:** Status coloridos para diferentes estados de veiculação
 - ✅ **Contadores Dinâmicos:** 
   - Validades: Pendentes vs Total Expirando
@@ -73,6 +75,13 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 ---
 
 ## 🆕 Melhorias Recentes
+
+### v2.3.1 - Tratamento de Veiculações
+- ✅ **Ações Unificadas:** Coluna "Ação" em ambas as abas (Validades e Veiculações)
+- ✅ **Controle Individual:** Sistema separado de "Marcar como Tratado" para veiculações
+- ✅ **Estados Independentes:** Campos `validadeTratada` e `veiculacaoTratada` funcionam separadamente
+- ✅ **Feedback Visual Consistente:** Mesmo comportamento de risco e desmarcação em ambas as abas
+- ✅ **Contadores Atualizados:** Ambas as abas mostram "Pendentes / Total" baseado no tratamento
 
 ### v2.3.0 - Gestão Semanal Aprimorada
 - ✅ **Página Unificada:** Combinação de "Validades da Semana" e "Veiculações da Semana" em uma interface única
