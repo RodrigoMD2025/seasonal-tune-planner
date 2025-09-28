@@ -1,16 +1,23 @@
 import { format, parseISO, startOfWeek, endOfWeek, isWithinInterval, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Timestamp } from 'firebase/firestore';
 
-export const formatDate = (date: Date | string, pattern: string = "dd/MM/yyyy") => {
+export const formatDate = (date: Date | string | Timestamp, pattern: string = "dd/MM/yyyy") => {
   try {
     let dateObj: Date;
-    if (typeof date === "string") {
+    
+    // Handle Firestore Timestamp
+    if (date && typeof date === 'object' && 'toDate' in date) {
+      dateObj = (date as Timestamp).toDate();
+    } else if (typeof date === "string") {
       dateObj = parse(date, 'dd/MM/yyyy', new Date());
       if (isNaN(dateObj.getTime())) {
         dateObj = parseISO(date);
       }
-    } else {
+    } else if (date instanceof Date) {
       dateObj = date;
+    } else {
+      return "Data inválida";
     }
 
     if (isNaN(dateObj.getTime())) return "Data inválida";

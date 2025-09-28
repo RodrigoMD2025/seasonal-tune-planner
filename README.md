@@ -26,11 +26,29 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
   - `Em Veiculação` → `Concluída` (automaticamente no dia seguinte ao fim do período)
 - ✅ **Busca Avançada:** Filtre agendamentos por nome do cliente em tempo real.
 - ✅ **Lógica de Datas Aprimorada:** Cálculos precisos considerando até 23:59h do último dia do período.
+- ✅ **Relatórios Personalizados:** Exporte dados filtrados para Excel ou CSV com todas as informações dos agendamentos.
 
 ### 📋 Gestão de Validades
 - ✅ **Página Dedicada:** Uma tela exclusiva (`/validade-semanal`) lista todos os agendamentos que expiram na semana atual.
 - ✅ **Fluxo de Tratamento:** Marque agendamentos como "tratados" com um clique. O item é riscado na lista, e o contador no dashboard é atualizado.
 - ✅ **Ação Reversível:** Desmarque um item como "tratado" a qualquer momento.
+
+### 📊 Sistema de Relatórios
+- ✅ **Exportação Flexível:** Gere relatórios em formato Excel (.xlsx) ou CSV para análise externa
+- ✅ **Filtros Inteligentes:** 
+  - Todos os status ou filtro específico por: Em Veiculação, Agendado, Concluída, Cancelado
+  - Contagem em tempo real dos registros que serão exportados
+- ✅ **Opções de Ordenação:** 
+  - Por nome do cliente (alfabética)
+  - Por data de início (mais recente primeiro)
+  - Por status (agrupamento lógico)
+- ✅ **Dados Completos Exportados:**
+  - Informações do cliente e período
+  - Datas de início e término formatadas
+  - Status dinâmico atual
+  - Tipo de transmissão e estilo musical
+  - Lista de tipos de playlist
+  - Data de criação do agendamento
 
 ### 🏢 Gestão de Clientes
 - ✅ **Cadastro Simplificado:** Adicione e gerencie clientes facilmente.
@@ -42,10 +60,20 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 - ✅ **Configuração Otimizada:** Environment variables organizadas para desenvolvimento e produção.
 - ✅ **Visual Refinado:** Interface com cores temáticas natalinas e componentes padronizados.
 - ✅ **Feedback Visual:** Tags coloridas para diferentes estados (Verde: ativo, Amarelo: agendado, Cinza escuro: concluída).
+- ✅ **Layout Otimizado:** Header reorganizado para melhor distribuição dos botões de ação.
+- ✅ **Gestão de Dados:** Sistema robusto de tratamento de timestamps do Firestore.
 
 ---
 
 ## 🆕 Melhorias Recentes
+
+### v2.2.0 - Sistema de Relatórios Completo
+- ✅ **Exportação Excel/CSV:** Gere relatórios completos em formato Excel (.xlsx) ou CSV
+- ✅ **Filtros Avançados:** Filtre por status (Em Veiculação, Agendado, Concluída, etc.)
+- ✅ **Opções de Ordenação:** Ordene por nome do cliente, data de início ou status
+- ✅ **Dados Completos:** Inclui todas as informações (cliente, período, datas, status, transmissão, playlists)
+- ✅ **Interface Intuitiva:** Modal dedicado com configurações flexíveis de exportação
+- ✅ **Correção de Timestamps:** Fix para exibição correta de datas do Firestore
 
 ### v2.1.0 - Sistema de Tags Dinâmicas Aprimorado
 - ✅ **Transição Automática de Status:** O sistema agora gerencia automaticamente a transição completa:
@@ -65,47 +93,217 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 
 ---
 
-## 🔄 Fluxo de Trabalho
+## 📄 Fluxo de Trabalho
 
-O sistema agora trata cada período como um agendamento independente, simplificando a gestão.
+O sistema agora trata cada período como um agendamento independente, simplificando a gestão com total flexibilidade para configuração de playlists natalinas.
 
-### Para Adicionar um Período
-1.  Clique em **"Novo Agendamento"**.
-2.  Selecione um cliente. O sistema mostrará os períodos já existentes.
-3.  Preencha o formulário para o novo período e salve.
-4.  Um novo card de agendamento será criado na lista.
+### 🎯 Visão Geral do Sistema
 
-### Para Editar um Período
-1.  Na lista de agendamentos, encontre o card do período desejado.
-2.  Clique no ícone de **Editar**.
-3.  Modifique as informações na janela e salve.
+```mermaid
+graph TB
+    subgraph "🎄 Sistema de Playlist Natalina"
+        A[🏠 Dashboard Principal] 
+        B[👥 Gestão de Clientes]
+        C[📅 Agendamentos]
+        D[⏰ Validades Semanais]
+    end
+    
+    A --> B
+    A --> C
+    A --> D
+    B --> C
+    C --> D
+    
+    style A fill:#dc2626,stroke:#991b1b,stroke-width:3px,color:#fff
+    style B fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
+    style C fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style D fill:#ca8a04,stroke:#a16207,stroke-width:2px,color:#fff
+```
+
+---
+
+### 🆕 Para Adicionar um Novo Período
 
 ```mermaid
 flowchart TD
-    subgraph Dashboard
-        A[Clica em &quot;Novo Agendamento&quot;]
-    end
+    Start([🎯 Iniciar]) --> A[🏠 Acessar Dashboard]
+    A --> B[➕ Clique em "Novo Agendamento"]
+    B --> C[👤 Selecionar Cliente]
+    
+    C --> D{Cliente tem<br/>histórico?}
+    D -->|Sim| E[📊 Sistema exibe<br/>períodos existentes]
+    D -->|Não| F[📝 Primeiro agendamento<br/>do cliente]
+    
+    E --> G[📋 Preencher formulário<br/>do NOVO período]
+    F --> G
+    
+    G --> H[📅 Definir datas<br/>início e fim]
+    H --> I[🎵 Escolher tipo<br/>de playlist]
+    I --> J[🎨 Selecionar estilo<br/>musical]
+    J --> K[💾 Salvar agendamento]
+    
+    K --> L[✅ Novo card criado<br/>na lista]
+    L --> M{Status<br/>automático}
+    
+    M --> N[⏳ Agendado<br/><em>amarelo</em>]
+    M --> O[▶️ Em Veiculação<br/><em>verde</em>]
+    M --> P[✅ Concluída<br/><em>cinza escuro</em>]
+    
+    N --> End([🎉 Processo<br/>Finalizado])
+    O --> End
+    P --> End
+    
+    %% Estilos
+    style Start fill:#dc2626,stroke:#991b1b,stroke-width:3px,color:#fff
+    style End fill:#16a34a,stroke:#15803d,stroke-width:3px,color:#fff
+    style E fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style N fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style O fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
+    style P fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff
+```
 
-    subgraph Diálogo de Criação
-        B[Seleciona Cliente]
-        C[Sistema exibe períodos existentes]
-        D[Preenche dados do NOVO período]
-        E[Salva]
-    end
+---
 
-    subgraph Lista de Agendamentos
-        F[Novo card de agendamento aparece]
-        G[Clica em &quot;Editar&quot; em um card]
+### ✏️ Para Editar um Período Existente
+
+```mermaid
+flowchart TD
+    Start([🔍 Localizar]) --> A[📋 Navegar na lista<br/>de agendamentos]
+    A --> B[🔎 Usar busca por cliente<br/><em>opcional</em>]
+    B --> C[🎯 Encontrar card<br/>do período desejado]
+    C --> D[✏️ Clicar no ícone<br/>"Editar"]
+    
+    D --> E[📝 Janela de edição<br/>abre com dados atuais]
+    E --> F{Que dados<br/>modificar?}
+    
+    F --> G[📅 Alterar datas]
+    F --> H[🎵 Mudar tipo playlist]
+    F --> I[🎨 Trocar estilo]
+    F --> J[📝 Atualizar observações]
+    
+    G --> K[💾 Salvar alterações]
+    H --> K
+    I --> K
+    J --> K
+    
+    K --> L[🔄 Card atualizado<br/>na lista]
+    L --> End([✅ Edição<br/>Concluída])
+    
+    %% Estilos
+    style Start fill:#2563eb,stroke:#1d4ed8,stroke-width:3px,color:#fff
+    style End fill:#16a34a,stroke:#15803d,stroke-width:3px,color:#fff
+    style E fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
+    style K fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#fff
+```
+
+---
+
+### 🏷️ Sistema de Tags Dinâmicas
+
+O sistema gerencia automaticamente a transição de status baseado nas datas:
+
+```mermaid
+timeline
+    title Ciclo de Vida do Agendamento
+    
+    section Criação
+        Agendamento Criado    : Status inicial definido
+                             : baseado na data atual
+    
+    section Status Agendado
+        Data futura          : Tag amarela "Agendado"
+                            : Aguardando início
+    
+    section Status Ativo  
+        Data atual no período : Tag verde "Em Veiculação"
+                             : Playlist sendo executada
+                             : Até 23:59h do último dia
+    
+    section Status Finalizado
+        Dia seguinte ao fim   : Tag cinza "Concluída"
+                             : Transição automática
+                             : Período encerrado
+```
+
+---
+
+### 📊 Estados Visuais dos Agendamentos
+
+| Status | Cor | Ícone | Descrição | Transição |
+|--------|-----|-------|-----------|-----------|
+| **Agendado** | 🟡 Amarelo | ⏳ | Período ainda não iniciou | ➡️ Automática no início |
+| **Em Veiculação** | 🟢 Verde | ▶️ | Playlist ativa hoje | ➡️ Automática após 23:59h |
+| **Concluída** | ⚫ Cinza Escuro | ✅ | Período finalizado | ➡️ Estado final |
+
+---
+
+### 🚀 Fluxo Completo de Gestão
+
+```mermaid
+graph LR
+    subgraph "👥 Clientes"
+        C1[Cadastrar Cliente]
+        C2[Importar Lista]
     end
     
-    subgraph Diálogo de Edição
-        H[Modifica dados do período selecionado]
-        I[Salva]
+    subgraph "📅 Agendamentos"
+        A1[Criar Período]
+        A2[Editar Período]
+        A3[Status Automático]
     end
-
-    A --> B --> C --> D --> E --> F
-    F --> G --> H --> I
+    
+    subgraph "⏰ Monitoramento"
+        M1[Dashboard Métricas]
+        M2[Validades Semanais]
+        M3[Relatórios]
+    end
+    
+    C1 --> A1
+    C2 --> A1
+    A1 --> A3
+    A2 --> A3
+    A3 --> M1
+    A3 --> M2
+    M2 --> M3
+    M1 --> M3
+    
+    style C1 fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
+    style C2 fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
+    style A1 fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style A2 fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style A3 fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
+    style M1 fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#fff
+    style M2 fill:#ca8a04,stroke:#a16207,stroke-width:2px,color:#fff
+    style M3 fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff
 ```
+
+---
+
+### 💡 Dicas de Uso Eficiente
+
+> **🎯 Produtividade Máxima**
+> 
+> 1. **📋 Use a busca** - Filtre rapidamente por nome do cliente
+> 2. **👁️ Monitore o dashboard** - Acompanhe métricas em tempo real  
+> 3. **⏰ Gerencie validades** - Trate agendamentos que expiram na semana
+> 4. **🔄 Aproveite o histórico** - Visualize períodos anteriores ao criar novos
+> 5. **🏷️ Confie nos status** - O sistema atualiza automaticamente as tags
+
+---
+
+### 🎄 Exemplo Prático de Uso
+
+Imagine que você precisa configurar a playlist natalina para o **Shopping Center ABC**:
+
+1. **👤 Cliente já cadastrado?** Se não, adicione rapidamente
+2. **📅 Definir período:** 01/12 a 25/12/2024
+3. **🎵 Escolher playlist:** "Natal Tradicional" 
+4. **🎨 Selecionar estilo:** "Clássicos Natalinos"
+5. **💾 Salvar:** Sistema cria o agendamento
+6. **🏷️ Status automático:** "Agendado" até 01/12, depois "Em Veiculação"
+7. **✅ Finalização:** Automaticamente "Concluída" em 26/12
+
+**Resultado:** Gestão completamente automatizada! 🎉
 
 ---
 
@@ -119,6 +317,7 @@ flowchart TD
 - **[Tailwind CSS](https://tailwindcss.com/)** - Framework CSS utility-first
 - **[shadcn/ui](https://ui.shadcn.com/)** - Componentes UI elegantes
 - **[Recharts](https://recharts.org/)** - Gráficos para React
+- **[XLSX](https://www.npmjs.com/package/xlsx)** - Biblioteca para geração de arquivos Excel/CSV
 
 ### Backend & Dados
 - **[Firebase](https://firebase.google.com/)** - Plataforma BaaS (Backend as a Service)

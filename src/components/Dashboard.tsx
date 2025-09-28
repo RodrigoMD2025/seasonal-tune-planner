@@ -7,6 +7,7 @@ import { ClientList } from "./ClientList";
 import { useEffect, useState } from "react";
 import { CreateScheduleDialog } from "./CreateScheduleDialog";
 import { ImportClientsDialog } from "./ImportClientsDialog";
+import { ReportGenerator } from "./ReportGenerator";
 import { Link } from 'react-router-dom';
 
 import { collection, getDocs, Timestamp } from 'firebase/firestore';
@@ -149,9 +150,13 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-subtle">
       <header className="bg-card border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div><h1 className="text-2xl font-bold text-foreground">🎄 Music Delivery - Sistema de Playlists Natalinas</h1><p className="text-muted-foreground mt-1">Gerencie agendamentos de playlists sazonais</p></div>
-            <div className="flex gap-3">
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-foreground">🎄 Music Delivery - Sistema de Playlists Natalinas</h1>
+              <p className="text-muted-foreground mt-1">Gerencie agendamentos de playlists sazonais</p>
+            </div>
+            <div className="flex gap-3 flex-shrink-0">
+              <ReportGenerator />
               <Button variant="outline" onClick={() => setIsImportDialogOpen(true)} className="shadow-sm"><FileSpreadsheet className="w-4 h-4 mr-2" />Importar Clientes</Button>
               <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-christmas shadow-christmas"><Plus className="w-4 h-4 mr-2" />Novo Agendamento</Button>
             </div>
