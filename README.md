@@ -15,12 +15,17 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
   - **Clientes Agendados:** Total de clientes que possuem pelo menos um agendamento, com gráfico de pizza (Agendados vs. Não Agendados).
   - **Novos Agendamentos:** Contagem de novos períodos criados na semana, com gráfico de barras diário.
   - **Veiculação Natalinas:** Percentual e contagem de clientes com playlists ativas *hoje*, com gráfico de pizza (Veiculados vs. Não Veiculados).
+- ✅ **Cálculos Precisos:** Lógica aprimorada para contagem de clientes ativos considerando horários exatos.
 - ✅ **Navegação Rápida:** Acesse a lista de clientes e agendamentos através de abas.
 
 ### 📅 Gestão de Agendamentos
 - ✅ **Períodos Independentes:** Cada período de veiculação é um agendamento individual, permitindo flexibilidade total.
 - ✅ **CRUD Completo:** Crie, edite e exclua agendamentos de forma simples e direta na lista principal.
-- ✅ **Status Dinâmico:** A tag de status muda de `Agendado` para `Em Veiculação` automaticamente quando o período de veiculação inicia.
+- ✅ **Status Dinâmico Inteligente:** Sistema de tags que atualiza automaticamente:
+  - `Agendado` → `Em Veiculação` (quando o período inicia)
+  - `Em Veiculação` → `Concluída` (automaticamente no dia seguinte ao fim do período)
+- ✅ **Busca Avançada:** Filtre agendamentos por nome do cliente em tempo real.
+- ✅ **Lógica de Datas Aprimorada:** Cálculos precisos considerando até 23:59h do último dia do período.
 
 ### 📋 Gestão de Validades
 - ✅ **Página Dedicada:** Uma tela exclusiva (`/validade-semanal`) lista todos os agendamentos que expiram na semana atual.
@@ -34,6 +39,29 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 ### 💡 Experiência de Uso (UX) Aprimorada
 - ✅ **Adição Inteligente de Períodos:** Ao criar um novo agendamento, o sistema exibe o histórico de períodos do cliente selecionado, tornando a adição de novos períodos mais contextual e eficiente.
 - ✅ **Interface Responsiva:** Acesse e gerencie o sistema de qualquer dispositivo.
+- ✅ **Configuração Otimizada:** Environment variables organizadas para desenvolvimento e produção.
+- ✅ **Visual Refinado:** Interface com cores temáticas natalinas e componentes padronizados.
+- ✅ **Feedback Visual:** Tags coloridas para diferentes estados (Verde: ativo, Amarelo: agendado, Cinza escuro: concluída).
+
+---
+
+## 🆕 Melhorias Recentes
+
+### v2.1.0 - Sistema de Tags Dinâmicas Aprimorado
+- ✅ **Transição Automática de Status:** O sistema agora gerencia automaticamente a transição completa:
+  - `Agendado` (amarelo) → `Em Veiculação` (verde) → `Concluída` (cinza escuro)
+- ✅ **Lógica de Tempo Precisa:** Considera até 23:59h do último dia para marcar como ativo
+- ✅ **Finalização Automática:** No dia seguinte ao término, agendamentos passam automaticamente para "Concluída"
+
+### v2.0.0 - Funcionalidades de Busca e UX
+- ✅ **Filtro de Busca em Tempo Real:** Campo de busca para filtrar agendamentos por nome do cliente
+- ✅ **Interface Refinada:** Componentes redesenhados com melhor hierarquia visual
+- ✅ **Configuração Otimizada:** Organização melhorada dos arquivos de ambiente (.env)
+
+### v1.9.0 - Dashboard com Métricas Avançadas
+- ✅ **Gráficos Interativos:** Visualizações com Recharts para todas as métricas
+- ✅ **Cálculos Inteligentes:** Algoritmos aprimorados para contagem de clientes ativos
+- ✅ **Página de Validades:** Tela dedicada para gestão de agendamentos que expiram
 
 ---
 
@@ -95,7 +123,8 @@ flowchart TD
 ### Backend & Dados
 - **[Firebase](https://firebase.google.com/)** - Plataforma BaaS (Backend as a Service)
   - **Firestore** - Banco de dados NoSQL em tempo real
-  - **GitHub Pages** - Hospedagem estática para o frontend
+  - **Environment Variables** - Configuração segura para desenvolvimento e produção
+- **[GitHub Pages](https://pages.github.com/)** - Hospedagem estática para o frontend
 
 ---
 
@@ -117,7 +146,8 @@ flowchart TD
     ```
 3.  **Configure o ambiente**
     - Renomeie `.env.example` para `.env`
-    - Preencha o arquivo `.env` com suas credenciais do Firebase.
+    - Preencha o arquivo `.env` com suas credenciais do Firebase
+    - Configure as variáveis VITE_API_URL para desenvolvimento/produção
 4.  **Execute o projeto**
     ```bash
     npm run dev

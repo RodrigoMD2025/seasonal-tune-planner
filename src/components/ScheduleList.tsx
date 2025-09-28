@@ -43,14 +43,16 @@ const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
   // Verifica se estamos dentro do período (incluindo o último dia até 23:59h)
   const endOfLastDay = endOfDay(endDate);
   const isActive = !isBefore(today, startDate) && !isAfter(today, endOfLastDay);
+  const isPastPeriod = isAfter(today, endOfLastDay);
   
-  if (schedule.status === 'scheduled' && isActive) {
-    return 'active';
+  // Se o período já passou, automaticamente marca como completado
+  if (isPastPeriod) {
+    return 'completed';
   }
   
-  // Se passou do período final, marca como completado
-  if (schedule.status === 'active' && isAfter(today, endOfLastDay)) {
-    return 'completed';
+  // Se está dentro do período ativo, marca como ativo
+  if (schedule.status === 'scheduled' && isActive) {
+    return 'active';
   }
   
   return schedule.status;
@@ -60,7 +62,7 @@ const getStatusColor = (status: string) => {
   switch (status) {
     case "active": return "bg-green-700 text-white";
     case "scheduled": return "bg-amber-500 text-white";
-    case "completed": return "bg-muted text-muted-foreground";
+    case "completed": return "bg-gray-700 text-white";
     default: return "bg-secondary text-secondary-foreground";
   }
 };
@@ -69,7 +71,7 @@ const getStatusText = (status: string) => {
   switch (status) {
     case "active": return "Em Veiculação";
     case "scheduled": return "Agendado";
-    case "completed": return "Finalizado";
+    case "completed": return "Concluída";
     default: return status;
   }
 };
