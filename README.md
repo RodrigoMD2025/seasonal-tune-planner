@@ -28,10 +28,17 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 - ✅ **Lógica de Datas Aprimorada:** Cálculos precisos considerando até 23:59h do último dia do período.
 - ✅ **Relatórios Personalizados:** Exporte dados filtrados para Excel ou CSV com todas as informações dos agendamentos.
 
-### 📋 Gestão de Validades
-- ✅ **Página Dedicada:** Uma tela exclusiva (`/validade-semanal`) lista todos os agendamentos que expiram na semana atual.
-- ✅ **Fluxo de Tratamento:** Marque agendamentos como "tratados" com um clique. O item é riscado na lista, e o contador no dashboard é atualizado.
-- ✅ **Ação Reversível:** Desmarque um item como "tratado" a qualquer momento.
+### 📋 Gestão Semanal Completa
+- ✅ **Página Unificada:** Tela dedicada (`/validade-semanal`) com dois módulos principais:
+  - **Validades da Semana:** Agendamentos que expiram na semana atual
+  - **Veiculações da Semana:** Agendamentos ativos ou em período de veiculação
+- ✅ **Sistema de Abas Intuitivo:** Navegação rápida entre os dois módulos
+- ✅ **Fluxo de Tratamento:** Marque validades como "tratadas" com um clique
+- ✅ **Acompanhamento Visual:** Status coloridos para diferentes estados de veiculação
+- ✅ **Contadores Dinâmicos:** 
+  - Validades: Pendentes vs Total Expirando
+  - Veiculações: Ativas vs Total em Veiculação
+- ✅ **Informações Rica:** Estilo musical, tipo de transmissão e períodos completos
 
 ### 📊 Sistema de Relatórios
 - ✅ **Exportação Flexível:** Gere relatórios em formato Excel (.xlsx) ou CSV para análise externa
@@ -66,6 +73,14 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 ---
 
 ## 🆕 Melhorias Recentes
+
+### v2.3.0 - Gestão Semanal Aprimorada
+- ✅ **Página Unificada:** Combinação de "Validades da Semana" e "Veiculações da Semana" em uma interface única
+- ✅ **Sistema de Abas:** Navegação intuitiva entre validades e veiculações
+- ✅ **Acompanhamento de Veiculações:** Nova funcionalidade para monitorar agendamentos ativos durante a semana
+- ✅ **Status Dinâmico Visual:** Badges coloridas para diferentes estados de veiculação
+- ✅ **Informações Detalhadas:** Exibição de estilo musical, transmissão e períodos completos
+- ✅ **Contadores Inteligentes:** Contagem separada para validades pendentes e veiculações ativas
 
 ### v2.2.0 - Sistema de Relatórios Completo
 - ✅ **Exportação Excel/CSV:** Gere relatórios completos em formato Excel (.xlsx) ou CSV
