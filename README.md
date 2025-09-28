@@ -151,29 +151,29 @@ graph TB
 ```mermaid
 flowchart TD
     Start([🎯 Iniciar]) --> A[🏠 Acessar Dashboard]
-    A --> B[➕ Clique em "Novo Agendamento"]
+    A --> B[➕ Clique em Novo Agendamento]
     B --> C[👤 Selecionar Cliente]
     
-    C --> D{Cliente tem<br/>histórico?}
-    D -->|Sim| E[📊 Sistema exibe<br/>períodos existentes]
-    D -->|Não| F[📝 Primeiro agendamento<br/>do cliente]
+    C --> D{Cliente tem historico?}
+    D -->|Sim| E[📊 Sistema exibe periodos existentes]
+    D -->|Não| F[📝 Primeiro agendamento do cliente]
     
-    E --> G[📋 Preencher formulário<br/>do NOVO período]
+    E --> G[📋 Preencher formulario do NOVO periodo]
     F --> G
     
-    G --> H[📅 Definir datas<br/>início e fim]
-    H --> I[🎵 Escolher tipo<br/>de playlist]
-    I --> J[🎨 Selecionar estilo<br/>musical]
+    G --> H[📅 Definir datas inicio e fim]
+    H --> I[🎵 Escolher tipo de playlist]
+    I --> J[🎨 Selecionar estilo musical]
     J --> K[💾 Salvar agendamento]
     
-    K --> L[✅ Novo card criado<br/>na lista]
-    L --> M{Status<br/>automático}
+    K --> L[✅ Novo card criado na lista]
+    L --> M{Status automatico}
     
-    M --> N[⏳ Agendado<br/><em>amarelo</em>]
-    M --> O[▶️ Em Veiculação<br/><em>verde</em>]
-    M --> P[✅ Concluída<br/><em>cinza escuro</em>]
+    M --> N[⏳ Agendado amarelo]
+    M --> O[▶️ Em Veiculacao verde]
+    M --> P[✅ Concluida cinza escuro]
     
-    N --> End([🎉 Processo<br/>Finalizado])
+    N --> End([🎉 Processo Finalizado])
     O --> End
     P --> End
     
@@ -192,26 +192,26 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    Start([🔍 Localizar]) --> A[📋 Navegar na lista<br/>de agendamentos]
-    A --> B[🔎 Usar busca por cliente<br/><em>opcional</em>]
-    B --> C[🎯 Encontrar card<br/>do período desejado]
-    C --> D[✏️ Clicar no ícone<br/>"Editar"]
+    Start([🔍 Localizar]) --> A[📋 Navegar na lista de agendamentos]
+    A --> B[🔎 Usar busca por cliente opcional]
+    B --> C[🎯 Encontrar card do periodo desejado]
+    C --> D[✏️ Clicar no icone Editar]
     
-    D --> E[📝 Janela de edição<br/>abre com dados atuais]
-    E --> F{Que dados<br/>modificar?}
+    D --> E[📝 Janela de edicao abre com dados atuais]
+    E --> F{Que dados modificar?}
     
     F --> G[📅 Alterar datas]
     F --> H[🎵 Mudar tipo playlist]
     F --> I[🎨 Trocar estilo]
-    F --> J[📝 Atualizar observações]
+    F --> J[📝 Atualizar observacoes]
     
-    G --> K[💾 Salvar alterações]
+    G --> K[💾 Salvar alteracoes]
     H --> K
     I --> K
     J --> K
     
-    K --> L[🔄 Card atualizado<br/>na lista]
-    L --> End([✅ Edição<br/>Concluída])
+    K --> L[🔄 Card atualizado na lista]
+    L --> End([✅ Edicao Concluida])
     
     %% Estilos
     style Start fill:#2563eb,stroke:#1d4ed8,stroke-width:3px,color:#fff
@@ -235,16 +235,16 @@ timeline
                              : baseado na data atual
     
     section Status Agendado
-        Data futura          : Tag amarela "Agendado"
+        Data futura          : Tag amarela Agendado
                             : Aguardando início
     
     section Status Ativo  
-        Data atual no período : Tag verde "Em Veiculação"
+        Data atual no período : Tag verde Em Veiculação
                              : Playlist sendo executada
                              : Até 23:59h do último dia
     
     section Status Finalizado
-        Dia seguinte ao fim   : Tag cinza "Concluída"
+        Dia seguinte ao fim   : Tag cinza Concluída
                              : Transição automática
                              : Período encerrado
 ```
