@@ -262,18 +262,7 @@ const WeeklyExpirationPage = () => {
                           <TableCell><Badge variant="secondary">{schedule.period}</Badge></TableCell>
                           
                           {activeTab === 'expiring' ? (
-                            <>
-                              <TableCell>{formatDate(schedule.endDate)}</TableCell>
-                              <TableCell className="text-right">
-                                <Button variant="ghost" size="sm" onClick={() => handleToggleTreated(schedule.id, !!schedule.validadeTratada)}>
-                                  {schedule.validadeTratada ? (
-                                    <><Undo2 className="w-4 h-4 mr-2" />Desmarcar</>
-                                  ) : (
-                                    <><CheckCircle className="w-4 h-4 mr-2 text-green-500" />Marcar como Tratado</>
-                                  )}
-                                </Button>
-                              </TableCell>
-                            </>
+                            <TableCell>{formatDate(schedule.endDate)}</TableCell>
                           ) : (
                             <>
                               <TableCell>{formatDate(schedule.startDate)} - {formatDate(schedule.endDate)}</TableCell>
