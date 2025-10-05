@@ -25,7 +25,8 @@ interface Client {
 }
 
 interface Schedule {
-  client: string; // Nome do cliente
+  client: string; // ID do cliente
+  clientName: string; // Nome do cliente
   status: "draft" | "scheduled" | "active" | "completed" | "cancelled";
 }
 
@@ -65,7 +66,7 @@ export const ClientList = () => {
       const activeSchedulesMap = new Map<string, number>();
       allSchedules.forEach(schedule => {
         if (schedule.status === 'scheduled' || schedule.status === 'active') {
-          activeSchedulesMap.set(schedule.client, (activeSchedulesMap.get(schedule.client) || 0) + 1);
+          activeSchedulesMap.set(schedule.clientName, (activeSchedulesMap.get(schedule.clientName) || 0) + 1);
         }
       });
 
@@ -185,7 +186,7 @@ export const ClientList = () => {
                               {client.musicStyle}
                             </Badge>
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className={`text-xs ${client.activeSchedules > 0 ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
                             {client.activeSchedules} agendamento{client.activeSchedules !== 1 ? 's' : ''} ativo{client.activeSchedules !== 1 ? 's' : ''}
                           </div>
                         </div>
