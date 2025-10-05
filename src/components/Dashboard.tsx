@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon } from "lucide-react";
+import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
 import { useEffect, useState } from "react";
@@ -9,6 +9,7 @@ import { CreateScheduleDialog } from "./CreateScheduleDialog";
 import { ImportClientsDialog } from "./ImportClientsDialog";
 import { ReportGenerator } from "./ReportGenerator";
 import { Link } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -39,6 +40,7 @@ const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
 
 const Dashboard = () => {
+  const { logout } = useAuth();
   const [activeTab, setActiveTab] = useState("schedules");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
@@ -155,10 +157,13 @@ const Dashboard = () => {
               <h1 className="text-2xl font-bold text-foreground">🎄 Music Delivery - Sistema de Playlists Natalinas</h1>
               <p className="text-muted-foreground mt-1">Gerencie agendamentos de playlists sazonais</p>
             </div>
-            <div className="flex gap-3 flex-shrink-0">
+            <div className="flex gap-3 flex-shrink-0 items-center">
               <ReportGenerator />
               <Button variant="outline" onClick={() => setIsImportDialogOpen(true)} className="shadow-sm"><FileSpreadsheet className="w-4 h-4 mr-2" />Importar Clientes</Button>
               <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-christmas shadow-christmas"><Plus className="w-4 h-4 mr-2" />Novo Agendamento</Button>
+              <Button variant="ghost" size="icon" onClick={logout} title="Logout">
+                <LogOut className="w-4 h-4" />
+              </Button>
             </div>
           </div>
         </div>

@@ -1,13 +1,19 @@
-# 🎄 Seasonal Tune Planner
+# 🎄 Agendador Natalinas
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![React](https://img.shields.io/badge/React-18.x-blue.svg)](https://reactjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue.svg)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.x-38B2AC.svg)](https://tailwindcss.com/)
 
-Sistema web avançado para **agendamento e gerenciamento de playlists sazonais de Natal**. Permite a configuração de múltiplos períodos de veiculação, tipos de playlist e estilos para diversos clientes, com um dashboard inteligente para acompanhamento em tempo real.
+Sistema web avançado para **agendamento e gerenciamento de playlists sazonais de Natal**. Permite a configuração de múltiplos períodos de veiculação, tipos de playlist e estilos para diversos clientes, com um dashboard inteligente para acompanhamento em tempo real e acesso seguro via autenticação.
 
 ## ✨ Funcionalidades Principais
+
+### 🔐 Sistema de Autenticação
+- ✅ **Login Seguro:** Acesso ao sistema protegido por e-mail e senha.
+- ✅ **Gerenciamento no Firebase:** Usuários autorizados são gerenciados diretamente no painel do Firebase Authentication.
+- ✅ **Rotas Protegidas:** Todas as páginas da aplicação, exceto a de login, são acessíveis apenas para usuários autenticados.
+- ✅ **Sessão Persistente:** O login é mantido mesmo após fechar e reabrir o navegador.
 
 ### 📊 Dashboard Dinâmico
 - ✅ **Métricas em Tempo Real:** Acompanhe o status atual das operações com cards que mostram:
@@ -76,6 +82,12 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 
 ## 🆕 Melhorias Recentes
 
+### v3.0.0 - Sistema de Autenticação
+- ✅ **Implementação de Login:** Adicionada página de login com autenticação via e-mail e senha.
+- ✅ **Segurança de Rotas:** Todas as rotas da aplicação agora são protegidas, exigindo login para acesso.
+- ✅ **Integração com Firebase Auth:** Utilização do serviço de Autenticação do Firebase para gerenciamento seguro de usuários.
+- ✅ **Fluxo de Logout:** Adicionado botão e funcionalidade de logout no dashboard.
+
 ### v2.3.1 - Tratamento de Veiculações
 - ✅ **Ações Unificadas:** Coluna "Ação" em ambas as abas (Validades e Veiculações)
 - ✅ **Controle Individual:** Sistema separado de "Marcar como Tratado" para veiculações
@@ -117,220 +129,6 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
 
 ---
 
-## 📄 Fluxo de Trabalho
-
-O sistema agora trata cada período como um agendamento independente, simplificando a gestão com total flexibilidade para configuração de playlists natalinas.
-
-### 🎯 Visão Geral do Sistema
-
-```mermaid
-graph TB
-    subgraph "🎄 Sistema de Playlist Natalina"
-        A[🏠 Dashboard Principal] 
-        B[👥 Gestão de Clientes]
-        C[📅 Agendamentos]
-        D[⏰ Validades Semanais]
-    end
-    
-    A --> B
-    A --> C
-    A --> D
-    B --> C
-    C --> D
-    
-    style A fill:#dc2626,stroke:#991b1b,stroke-width:3px,color:#fff
-    style B fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
-    style C fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
-    style D fill:#ca8a04,stroke:#a16207,stroke-width:2px,color:#fff
-```
-
----
-
-### 🆕 Para Adicionar um Novo Período
-
-```mermaid
-flowchart TD
-    Start([🎯 Iniciar]) --> A[🏠 Acessar Dashboard]
-    A --> B[➕ Clique em Novo Agendamento]
-    B --> C[👤 Selecionar Cliente]
-    
-    C --> D{Cliente tem historico?}
-    D -->|Sim| E[📊 Sistema exibe periodos existentes]
-    D -->|Não| F[📝 Primeiro agendamento do cliente]
-    
-    E --> G[📋 Preencher formulario do NOVO periodo]
-    F --> G
-    
-    G --> H[📅 Definir datas inicio e fim]
-    H --> I[🎵 Escolher tipo de playlist]
-    I --> J[🎨 Selecionar estilo musical]
-    J --> K[💾 Salvar agendamento]
-    
-    K --> L[✅ Novo card criado na lista]
-    L --> M{Status automatico}
-    
-    M --> N[⏳ Agendado amarelo]
-    M --> O[▶️ Em Veiculacao verde]
-    M --> P[✅ Concluida cinza escuro]
-    
-    N --> End([🎉 Processo Finalizado])
-    O --> End
-    P --> End
-    
-    %% Estilos
-    style Start fill:#dc2626,stroke:#991b1b,stroke-width:3px,color:#fff
-    style End fill:#16a34a,stroke:#15803d,stroke-width:3px,color:#fff
-    style E fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style N fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style O fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
-    style P fill:#6b7280,stroke:#4b5563,stroke-width:2px,color:#fff
-```
-
----
-
-### ✏️ Para Editar um Período Existente
-
-```mermaid
-flowchart TD
-    Start([🔍 Localizar]) --> A[📋 Navegar na lista de agendamentos]
-    A --> B[🔎 Usar busca por cliente opcional]
-    B --> C[🎯 Encontrar card do periodo desejado]
-    C --> D[✏️ Clicar no icone Editar]
-    
-    D --> E[📝 Janela de edicao abre com dados atuais]
-    E --> F{Que dados modificar?}
-    
-    F --> G[📅 Alterar datas]
-    F --> H[🎵 Mudar tipo playlist]
-    F --> I[🎨 Trocar estilo]
-    F --> J[📝 Atualizar observacoes]
-    
-    G --> K[💾 Salvar alteracoes]
-    H --> K
-    I --> K
-    J --> K
-    
-    K --> L[🔄 Card atualizado na lista]
-    L --> End([✅ Edicao Concluida])
-    
-    %% Estilos
-    style Start fill:#2563eb,stroke:#1d4ed8,stroke-width:3px,color:#fff
-    style End fill:#16a34a,stroke:#15803d,stroke-width:3px,color:#fff
-    style E fill:#fbbf24,stroke:#f59e0b,stroke-width:2px,color:#000
-    style K fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#fff
-```
-
----
-
-### 🏷️ Sistema de Tags Dinâmicas
-
-O sistema gerencia automaticamente a transição de status baseado nas datas:
-
-```mermaid
-timeline
-    title Ciclo de Vida do Agendamento
-    
-    section Criação
-        Agendamento Criado    : Status inicial definido
-                             : baseado na data atual
-    
-    section Status Agendado
-        Data futura          : Tag amarela Agendado
-                            : Aguardando início
-    
-    section Status Ativo  
-        Data atual no período : Tag verde Em Veiculação
-                             : Playlist sendo executada
-                             : Até 23:59h do último dia
-    
-    section Status Finalizado
-        Dia seguinte ao fim   : Tag cinza Concluída
-                             : Transição automática
-                             : Período encerrado
-```
-
----
-
-### 📊 Estados Visuais dos Agendamentos
-
-| Status | Cor | Ícone | Descrição | Transição |
-|--------|-----|-------|-----------|-----------|
-| **Agendado** | 🟡 Amarelo | ⏳ | Período ainda não iniciou | ➡️ Automática no início |
-| **Em Veiculação** | 🟢 Verde | ▶️ | Playlist ativa hoje | ➡️ Automática após 23:59h |
-| **Concluída** | ⚫ Cinza Escuro | ✅ | Período finalizado | ➡️ Estado final |
-
----
-
-### 🚀 Fluxo Completo de Gestão
-
-```mermaid
-graph LR
-    subgraph "👥 Clientes"
-        C1[Cadastrar Cliente]
-        C2[Importar Lista]
-    end
-    
-    subgraph "📅 Agendamentos"
-        A1[Criar Período]
-        A2[Editar Período]
-        A3[Status Automático]
-    end
-    
-    subgraph "⏰ Monitoramento"
-        M1[Dashboard Métricas]
-        M2[Validades Semanais]
-        M3[Relatórios]
-    end
-    
-    C1 --> A1
-    C2 --> A1
-    A1 --> A3
-    A2 --> A3
-    A3 --> M1
-    A3 --> M2
-    M2 --> M3
-    M1 --> M3
-    
-    style C1 fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
-    style C2 fill:#16a34a,stroke:#15803d,stroke-width:2px,color:#fff
-    style A1 fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
-    style A2 fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
-    style A3 fill:#2563eb,stroke:#1d4ed8,stroke-width:2px,color:#fff
-    style M1 fill:#dc2626,stroke:#991b1b,stroke-width:2px,color:#fff
-    style M2 fill:#ca8a04,stroke:#a16207,stroke-width:2px,color:#fff
-    style M3 fill:#7c3aed,stroke:#6d28d9,stroke-width:2px,color:#fff
-```
-
----
-
-### 💡 Dicas de Uso Eficiente
-
-> **🎯 Produtividade Máxima**
-> 
-> 1. **📋 Use a busca** - Filtre rapidamente por nome do cliente
-> 2. **👁️ Monitore o dashboard** - Acompanhe métricas em tempo real  
-> 3. **⏰ Gerencie validades** - Trate agendamentos que expiram na semana
-> 4. **🔄 Aproveite o histórico** - Visualize períodos anteriores ao criar novos
-> 5. **🏷️ Confie nos status** - O sistema atualiza automaticamente as tags
-
----
-
-### 🎄 Exemplo Prático de Uso
-
-Imagine que você precisa configurar a playlist natalina para o **Shopping Center ABC**:
-
-1. **👤 Cliente já cadastrado?** Se não, adicione rapidamente
-2. **📅 Definir período:** 01/12 a 25/12/2024
-3. **🎵 Escolher playlist:** "Natal Tradicional" 
-4. **🎨 Selecionar estilo:** "Clássicos Natalinos"
-5. **💾 Salvar:** Sistema cria o agendamento
-6. **🏷️ Status automático:** "Agendado" até 01/12, depois "Em Veiculação"
-7. **✅ Finalização:** Automaticamente "Concluída" em 26/12
-
-**Resultado:** Gestão completamente automatizada! 🎉
-
----
-
 ## 🛠️ Tecnologias
 
 ### Frontend
@@ -346,7 +144,7 @@ Imagine que você precisa configurar a playlist natalina para o **Shopping Cente
 ### Backend & Dados
 - **[Firebase](https://firebase.google.com/)** - Plataforma BaaS (Backend as a Service)
   - **Firestore** - Banco de dados NoSQL em tempo real
-  - **Environment Variables** - Configuração segura para desenvolvimento e produção
+  - **Firebase Authentication** - Sistema de autenticação de usuários
 - **[GitHub Pages](https://pages.github.com/)** - Hospedagem estática para o frontend
 
 ---
@@ -354,7 +152,7 @@ Imagine que você precisa configurar a playlist natalina para o **Shopping Cente
 ## 🚀 Início Rápido
 
 ### Pré-requisitos
-- Node.js 18+
+- Node.js 20+
 - npm ou yarn
 
 ### Instalação
@@ -369,41 +167,14 @@ Imagine que você precisa configurar a playlist natalina para o **Shopping Cente
     ```
 3.  **Configure o ambiente**
     - Renomeie `.env.example` para `.env`
-    - Preencha o arquivo `.env` com suas credenciais do Firebase
-    - Configure as variáveis VITE_API_URL para desenvolvimento/produção
+    - Preencha o arquivo `.env` com suas credenciais do Firebase. Você pode encontrá-las nas **Configurações do Projeto** no seu painel do Firebase.
 4.  **Execute o projeto**
     ```bash
     npm run dev
     ```
 
 ### Deploy (GitHub Pages)
-O projeto está configurado para deploy automático no GitHub Pages.
-
-1.  **Build & Deploy**
-    ```bash
-    npm run deploy
-    ```
-
----
-
-## 📁 Estrutura do Projeto
-
-```
-sistema-playlist-natalina/
-├── 📁 public/                 # Assets estáticos
-├── 📁 src/
-│   ├── 📁 components/         # Componentes React
-│   │   └── 📁 ui/            # shadcn/ui components
-│   ├── 📁 pages/             # Páginas completas (Dashboard, Validade Semanal)
-│   ├── 📁 hooks/             # Custom React hooks
-│   ├── 📁 lib/               # Utilitários (datas, etc)
-│   └── ...
-├── 📄 .firebaserc           # Projetos Firebase
-├── 📄 .gitignore
-├── 📄 package.json
-├── 📄 vite.config.ts         # Config Vite
-└── 📄 tsconfig.json          # Config TypeScript
-```
+O deploy é feito automaticamente via GitHub Actions toda vez que um novo commit é enviado para a branch `main`.
 
 ---
 
@@ -433,6 +204,6 @@ Este projeto está sob a licença **MIT**.
 
 **Desenvolvido com ❤️ para a temporada natalina 🎄**
 
-[⬆️ Voltar ao topo](#-seasonal-tune-planner)
+[⬆️ Voltar ao topo](#-agendador-natalinas)
 
 </div>

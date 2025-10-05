@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
+import { getAuth } from 'firebase/auth';
 
 // Carrega as variáveis de ambiente com o prefixo VITE_
 const firebaseConfig = {
@@ -16,3 +17,6 @@ const app = initializeApp(firebaseConfig);
 
 // Exporta a instância do Firestore (nosso banco de dados)
 export const db = getFirestore(app);
+
+// Exporta a instância do Firebase Auth
+export const auth = getAuth(app);
