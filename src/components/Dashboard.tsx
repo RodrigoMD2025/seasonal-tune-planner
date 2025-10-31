@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut } from "lucide-react";
+import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
 import { useEffect, useState } from "react";
@@ -24,7 +24,6 @@ interface Schedule {
   endDate: Timestamp | string;
   period: string;
   validadeTratada?: boolean;
-  [key: string]: any;
 }
 
 interface DashboardStat {
@@ -34,7 +33,15 @@ interface DashboardStat {
   icon: React.ElementType;
   chartData?: { name: string; value: number; }[];
   barChartData?: { name: string; count: number; }[];
+  // Novas propriedades para a alternância de gráficos
+  altTitle?: string;
+  altValue?: string;
+  altDescription?: string;
+  altBarChartData?: { name: string; count: number; }[];
+  altIcon?: React.ElementType;
 }
+
+type WeeklyChartType = 'expiring' | 'broadcasting';
 
 const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
@@ -46,6 +53,7 @@ const Dashboard = () => {
   const [isImportDialogOpen, setIsImportDialogOpen] = useState(false);
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [weeklyChartType, setWeeklyChartType] = useState<WeeklyChartType>('expiring');
 
   const initialStats: DashboardStat[] = [
     { title: "Validade Próxima (Semana)", value: "0", description: "Carregando...", icon: AlertTriangle },
@@ -99,9 +107,10 @@ const Dashboard = () => {
 
         const startOfWeekDate = getStartOfWeek(today);
         const endOfWeekDate = getEndOfWeek(today);
-        const expiringThisWeekUntreated = allSchedules.filter(s => !s.validadeTratada && s.endDate && isDateInCurrentWeek(s.endDate));
         const weekRange = `${formatDate(startOfWeekDate, 'dd/MM')} - ${formatDate(endOfWeekDate, 'dd/MM')}`;
 
+        // Dados para "Validade Próxima"
+        const expiringThisWeekUntreated = allSchedules.filter(s => !s.validadeTratada && s.endDate && isDateInCurrentWeek(s.endDate));
         const expirationsPerDayOfWeek = days.map((dayName) => ({ name: dayName, count: 0 }));
         expiringThisWeekUntreated.forEach(schedule => {
           const endDate = parseDate(schedule.endDate);
@@ -111,6 +120,33 @@ const Dashboard = () => {
           }
         });
 
+        // Dados para "Veiculações da Semana"
+        const broadcastingThisWeek = allSchedules.filter(s => {
+          const startDate = parseDate(s.startDate);
+          const endDate = parseDate(s.endDate);
+          
+          if (!startDate || !endDate) return false;
+          
+          const weekInterval = { start: startOfWeekDate, end: endOfWeekDate };
+          const scheduleInterval = { start: startDate, end: endOfDay(endDate) };
+          
+          return isWithinInterval(startOfWeekDate, scheduleInterval) || 
+                 isWithinInterval(endOfWeekDate, scheduleInterval) ||
+                 isWithinInterval(startDate, weekInterval) ||
+                 isWithinInterval(endDate, weekInterval);
+        });
+
+        const broadcastsPerDayOfWeek = days.map((dayName) => ({ name: dayName, count: 0 }));
+        // Nova lógica: contar agendamentos que *começam* em cada dia da semana
+        broadcastingThisWeek.forEach(schedule => {
+          const startDate = parseDate(schedule.startDate);
+          if (startDate && isDateInCurrentWeek(startDate)) { // Verifica se a startDate está na semana atual
+            const dayIndex = startDate.getDay();
+            broadcastsPerDayOfWeek[dayIndex].count++;
+          }
+        });
+
+        // Dados para "Novo(s) Agendamento(s) esta Semana"
         const newSchedulesThisWeek = allSchedules.filter(s => {
           if (!s.createdAt) return false;
           const createdAtDate = s.createdAt instanceof Timestamp ? s.createdAt.toDate() : parseDate(s.createdAt as string);
@@ -129,11 +165,24 @@ const Dashboard = () => {
         setDashboardStats(prevStats => prevStats.map(stat => {
           switch (stat.title) {
             case "Validade Próxima (Semana)":
-              return { ...stat, value: expiringThisWeekUntreated.length.toString(), description: `Clientes pendentes para ${weekRange}`, barChartData: expirationsPerDayOfWeek };
+              return {
+                ...stat,
+                value: expiringThisWeekUntreated.length.toString(),
+                description: `Clientes pendentes para ${weekRange}`,
+                barChartData: expirationsPerDayOfWeek,
+                altTitle: "Novos Agendamentos em Veiculação (Semana)", // Título atualizado
+                altValue: broadcastingThisWeek.filter(s => {
+                  const startDate = parseDate(s.startDate);
+                  return startDate && isDateInCurrentWeek(startDate);
+                }).length.toString(),
+                altDescription: `Novos agendamentos que iniciam a veiculação esta semana (${weekRange})`, // Descrição atualizada
+                altBarChartData: broadcastsPerDayOfWeek,
+                altIcon: PlayCircle,
+              };
             case "Clientes Agendados":
               return { ...stat, value: scheduledClientsCount.toString(), description: `De ${clientsCount} clientes totais`, chartData: [{ name: 'Agendados', value: scheduledClientsCount }, { name: 'Não Agendados', value: clientsCount - scheduledClientsCount }] };
             case "Novo(s) Agendamento(s) esta Semana":
-              return { ...stat, value: newSchedulesThisWeek.length.toString(), barChartData: newSchedulesPerDayOfWeek };
+              return { ...stat, value: newSchedulesThisWeek.length.toString(), description: `De Domingo a Sábado (${weekRange})`, barChartData: newSchedulesPerDayOfWeek };
             case "Veiculação Natalinas":
               return { ...stat, value: `${((activeClientsCount / clientsCount) * 100 || 0).toFixed(0)}%`, description: `${activeClientsCount} cliente(s) em veiculação hoje`, chartData: [{ name: 'Veiculados', value: activeClientsCount }, { name: 'Não Veiculados', value: clientsCount - activeClientsCount }] };
             default: return stat;
@@ -148,13 +197,17 @@ const Dashboard = () => {
     fetchDashboardStats();
   }, []);
 
+  const toggleWeeklyChart = () => {
+    setWeeklyChartType(prev => prev === 'expiring' ? 'broadcasting' : 'expiring');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <header className="bg-card border-b border-border shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between gap-6">
+          <div className="flex flex-col items-start gap-4">
             <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-foreground">🎄 Music Delivery - Sistema de Playlists Natalinas</h1>
+              <h1 className="text-2xl font-bold text-foreground">🎄 Sistema de Playlists Natalinas</h1>
               <p className="text-muted-foreground mt-1">Gerencie agendamentos de playlists sazonais</p>
             </div>
             <div className="flex gap-3 flex-shrink-0 items-center">
@@ -176,75 +229,96 @@ const Dashboard = () => {
           ) : statsError ? (
             <div className="col-span-full text-center py-4 text-destructive"><p>{statsError}</p></div>
           ) : (
-            dashboardStats.map((stat) => (
-              <Card key={stat.title} className="shadow-sm border-border/50 hover:shadow-md transition-shadow flex flex-col">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">{stat.title}</CardTitle>
-                  <stat.icon className={`h-4 w-4 text-muted-foreground`} />
-                </CardHeader>
-                <CardContent className="flex-grow flex flex-col justify-start">
-                  <div>
-                    <div className="text-2xl font-bold text-foreground">{stat.value}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{stat.description}</p>
-                  </div>
-                  
-                  {stat.barChartData && (
-                    <div className="h-[100px] w-full mt-4">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={stat.barChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                          <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                          <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
-                          <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                          <Tooltip cursor={{ fill: '#f3f4f6' }} formatter={(value) => `${value}`}/>
-                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                            {stat.barChartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={stat.title === "Validade Próxima (Semana)" ? '#ef4444' : '#82ca9d'} />))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  )}
+            dashboardStats.map((stat) => {
+              const isWeeklyCard = stat.title === "Validade Próxima (Semana)";
+              const displayExpiring = isWeeklyCard && weeklyChartType === 'expiring';
+              const displayBroadcasting = isWeeklyCard && weeklyChartType === 'broadcasting';
 
-                  {stat.title === "Veiculação Natalinas" && stat.chartData && (
-                    <div className="h-[120px] w-full mt-2">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
-                            {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_VEICULACAO[index % PIE_COLORS_VEICULACAO.length]} />))}
-                          </Pie>
-                          <Tooltip formatter={(value) => `${value} cliente(s)`} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="flex justify-center gap-4 text-xs mt-2">
-                        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_VEICULACAO[0] }} /><span>Veiculados</span></div>
-                        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_VEICULACAO[1] }} /><span>Não Veiculados</span></div>
-                      </div>
-                    </div>
-                  )}
+              const cardTitle = displayBroadcasting ? stat.altTitle : stat.title;
+              const cardValue = displayBroadcasting ? stat.altValue : stat.value;
+              const cardDescription = displayBroadcasting ? stat.altDescription : stat.description;
+              const cardBarData = displayBroadcasting ? stat.altBarChartData : stat.barChartData;
+              const cardIcon = displayBroadcasting ? stat.altIcon : stat.icon;
+              const barColor = displayExpiring ? '#ef4444' : '#22c55e'; // Vermelho para validade, Verde para veiculação
 
-                  {stat.title === "Clientes Agendados" && stat.chartData && (
-                    <div className="h-[120px] w-full mt-2">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <PieChart>
-                          <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
-                            {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_AGENDADOS[index % PIE_COLORS_AGENDADOS.length]} />))}
-                          </Pie>
-                          <Tooltip formatter={(value) => `${value} cliente(s)`} />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div className="flex justify-center gap-4 text-xs mt-2">
-                        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_AGENDADOS[0] }} /><span>Agendados</span></div>
-                        <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_AGENDADOS[1] }} /><span>Não Agendados</span></div>
+              return (
+                <Card key={stat.title} className="shadow-sm border-border/50 hover:shadow-md transition-shadow flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">{cardTitle}</CardTitle>
+                    {cardIcon && <cardIcon className={`h-4 w-4 text-muted-foreground`} />}
+                  </CardHeader>
+                  <CardContent className="flex-grow flex flex-col justify-start">
+                    <div>
+                      <div className="text-2xl font-bold text-foreground">{cardValue}</div>
+                      <p className="text-xs text-muted-foreground mt-1">{cardDescription}</p>
+                    </div>
+                    
+                    {stat.barChartData && (
+                      <div className="h-[100px] w-full mt-4">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={cardBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
+                            <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
+                            <Tooltip cursor={{ fill: '#f3f4f6' }} formatter={(value) => `${value}`}/>
+                            <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                              {cardBarData.map((entry, index) => (<Cell key={`cell-${index}`} fill={barColor} />))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
                       </div>
+                    )}
+
+                    {stat.title === "Veiculação Natalinas" && stat.chartData && (
+                      <div className="h-[120px] w-full mt-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
+                              {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_VEICULACAO[index % PIE_COLORS_VEICULACAO.length]} />))}
+                            </Pie>
+                            <Tooltip formatter={(value) => `${value} cliente(s)`} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="flex justify-center gap-4 text-xs mt-2">
+                          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_VEICULACAO[0] }} /><span>Veiculados</span></div>
+                          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_VEICULACAO[1] }} /><span>Não Veiculados</span></div>
+                        </div>
+                      </div>
+                    )}
+
+                    {stat.title === "Clientes Agendados" && stat.chartData && (
+                      <div className="h-[120px] w-full mt-2">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
+                              {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_AGENDADOS[index % PIE_COLORS_AGENDADOS.length]} />))}
+                            </Pie>
+                            <Tooltip formatter={(value) => `${value} cliente(s)`} />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="flex justify-center gap-4 text-xs mt-2">
+                          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_AGENDADOS[0] }} /><span>Agendados</span></div>
+                          <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{ backgroundColor: PIE_COLORS_AGENDADOS[1] }} /><span>Não Agendados</span></div>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                  {isWeeklyCard && (
+                    <div className="p-4 pt-0 mt-auto flex items-center gap-2">
+                      <Button variant="outline" size="sm" className="flex-grow !px-2 !text-xs !gap-1" onClick={toggleWeeklyChart}>
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        {weeklyChartType === 'expiring' ? 'Ver Veiculações' : 'Ver Validades'}
+                      </Button>
+                      <Link to="/validade-semanal" className="flex-grow">
+                        <Button variant="outline" size="sm" className="w-full !px-2 !text-xs !gap-1">
+                          Ver Detalhes <ArrowRight className="w-3 h-3 ml-1" />
+                        </Button>
+                      </Link>
                     </div>
                   )}
-                </CardContent>
-                {stat.title === "Validade Próxima (Semana)" && (
-                  <div className="p-4 pt-0 mt-auto">
-                    <Link to="/validade-semanal"><Button variant="outline" size="sm" className="w-full">Ver Detalhes <ArrowRight className="w-4 h-4 ml-2" /></Button></Link>
-                  </div>
-                )}
-              </Card>
-            ))
+                </Card>
+              )
+            })
           )}
         </div>
 

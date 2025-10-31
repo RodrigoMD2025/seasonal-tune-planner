@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
+import { Input } from '@/components/ui/input'; // Adicionado: Import do componente Input
 
 interface Schedule {
   id: string;
@@ -30,6 +31,7 @@ const WeeklyExpirationPage = () => {
   const [activeTab, setActiveTab] = useState<'expiring' | 'broadcasting'>('expiring');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState(''); // Adicionado: Estado para o termo de busca
 
   const parseDate = (date: string | Timestamp): Date | null => {
     if (date instanceof Timestamp) return date.toDate();
@@ -161,10 +163,31 @@ const WeeklyExpirationPage = () => {
     }
   };
 
-  const currentSchedules = activeTab === 'expiring' ? expiringSchedules : broadcastSchedules;
+  // Função de filtragem
+  const filterSchedules = (schedules: Schedule[], term: string): Schedule[] => {
+    if (!term) return schedules;
+    const lowercasedTerm = term.toLowerCase();
+
+    return schedules.filter(schedule => {
+      const clientNameMatch = schedule.clientName?.toLowerCase().includes(lowercasedTerm);
+      
+      const startDate = parseDate(schedule.startDate);
+      const endDate = parseDate(schedule.endDate);
+
+      const startDateMatch = startDate ? formatDate(startDate, 'dd/MM/yyyy').includes(lowercasedTerm) : false;
+      const endDateMatch = endDate ? formatDate(endDate, 'dd/MM/yyyy').includes(lowercasedTerm) : false;
+
+      return clientNameMatch || startDateMatch || endDateMatch;
+    });
+  };
+
+  const filteredExpiringSchedules = filterSchedules(expiringSchedules, searchTerm);
+  const filteredBroadcastSchedules = filterSchedules(broadcastSchedules, searchTerm);
+
+  const currentSchedules = activeTab === 'expiring' ? filteredExpiringSchedules : filteredBroadcastSchedules;
   const pendingCount = activeTab === 'expiring' 
-    ? expiringSchedules.filter(s => !s.validadeTratada).length
-    : broadcastSchedules.filter(s => !s.veiculacaoTratada).length;
+    ? filteredExpiringSchedules.filter(s => !s.validadeTratada).length
+    : filteredBroadcastSchedules.filter(s => !s.veiculacaoTratada).length;
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -183,6 +206,17 @@ const WeeklyExpirationPage = () => {
           </div>
         </div>
         
+        {/* Campo de busca */}
+        <div className="mb-6">
+          <Input
+            type="text"
+            placeholder="Buscar por cliente ou data (DD/MM/AAAA)..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="max-w-sm"
+          />
+        </div>
+
         {/* Tabs Navigation */}
         <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg w-fit">
           <Button 
@@ -231,18 +265,21 @@ const WeeklyExpirationPage = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="font-semibold">Cliente</TableHead>
-                    <TableHead>Período</TableHead>
-                    {activeTab === 'expiring' ? (
-                      <TableHead>Data de Término</TableHead>
-                    ) : (
-                      <>
-                        <TableHead>Período de Veiculação</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Estilo/Transmissão</TableHead>
-                      </>
-                    )}
-                    <TableHead className="text-right">Ação</TableHead>
+                                        <TableHead className="text-left font-semibold">Cliente</TableHead>
+                                        <TableHead className="text-left">Período</TableHead>
+                                        {activeTab === 'expiring' ? (
+                                          <>
+                                            <TableHead className="text-left">Data de Término</TableHead>
+                                            <TableHead className="text-left">Estilo/Transmissão/Tipo</TableHead>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <TableHead className="text-left">Período de Veiculação</TableHead>
+                                            <TableHead className="text-left">Status</TableHead>
+                                            <TableHead className="text-left">Estilo/Transmissão/Tipo</TableHead>
+                                          </>
+                                        )}
+                                        <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -258,26 +295,44 @@ const WeeklyExpirationPage = () => {
                           ) ? 'treated' : 'untreated'} 
                           className="data-[state=treated]:text-muted-foreground data-[state=treated]:line-through"
                         >
-                          <TableCell className="font-medium">{schedule.clientName}</TableCell>
-                          <TableCell><Badge variant="secondary">{schedule.period}</Badge></TableCell>
+                          <TableCell className="text-left font-medium">{schedule.clientName}</TableCell>
+                          <TableCell className="text-left"><Badge variant="secondary">{schedule.period}</Badge></TableCell>
                           
                           {activeTab === 'expiring' ? (
-                            <TableCell>{formatDate(schedule.endDate)}</TableCell>
+                            <>
+                              <TableCell className="text-left">{formatDate(schedule.endDate)}</TableCell>
+                              <TableCell className="text-left">
+                                <div className="flex flex-wrap gap-1">
+                                  {schedule.musicStyle && (
+                                    <Badge variant="outline" className="text-xs">{schedule.musicStyle}</Badge>
+                                  )}
+                                  {schedule.broadcast && (
+                                    <Badge variant="outline" className a="text-xs">{schedule.broadcast}</Badge>
+                                  )}
+                                  {schedule.playlistTypes && (
+                                    <Badge variant="outline" className="text-xs">{schedule.playlistTypes.join(', ')}</Badge>
+                                  )}
+                                </div>
+                              </TableCell>
+                            </>
                           ) : (
                             <>
-                              <TableCell>{formatDate(schedule.startDate)} - {formatDate(schedule.endDate)}</TableCell>
-                              <TableCell>
+                              <TableCell className="text-left">{formatDate(schedule.startDate)} - {formatDate(schedule.endDate)}</TableCell>
+                              <TableCell className="text-left">
                                 <Badge className={getStatusColor(dynamicStatus)}>
                                   {getStatusText(dynamicStatus)}
                                 </Badge>
                               </TableCell>
-                              <TableCell>
-                                <div className="space-y-1">
+                              <TableCell className="text-left">
+                                <div className="flex flex-wrap gap-1">
                                   {schedule.musicStyle && (
                                     <Badge variant="outline" className="text-xs">{schedule.musicStyle}</Badge>
                                   )}
                                   {schedule.broadcast && (
                                     <Badge variant="outline" className="text-xs">{schedule.broadcast}</Badge>
+                                  )}
+                                  {schedule.playlistTypes && (
+                                    <Badge variant="outline" className="text-xs">{schedule.playlistTypes.join(', ')}</Badge>
                                   )}
                                 </div>
                               </TableCell>
@@ -300,7 +355,7 @@ const WeeklyExpirationPage = () => {
                               ) ? (
                                 <><Undo2 className="w-4 h-4 mr-2" />Desmarcar</>
                               ) : (
-                                <><CheckCircle className="w-4 h-4 mr-2 text-green-500" />Marcar como Tratado</>
+                                <><CheckCircle className="w-4 h-4 mr-2 text-green-500" />Marcar OK</>
                               )}
                             </Button>
                           </TableCell>
@@ -310,7 +365,7 @@ const WeeklyExpirationPage = () => {
                   ) : (
                     <TableRow>
                       <TableCell 
-                        colSpan={activeTab === 'expiring' ? 4 : 6} 
+                        colSpan={activeTab === 'expiring' ? 5 : 6} 
                         className="text-center h-24 text-muted-foreground"
                       >
                         {activeTab === 'expiring' 
