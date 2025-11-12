@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 import { Input } from '@/components/ui/input'; // Adicionado: Import do componente Input
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 
 interface Schedule {
   id: string;
@@ -32,6 +33,7 @@ const WeeklyExpirationPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(''); // Adicionado: Estado para o termo de busca
+  const [actionFilter, setActionFilter] = useState<'all' | 'marcar_ok' | 'desmarcar'>('all'); // Novo estado para o filtro de ação
 
   const parseDate = (date: string | Timestamp): Date | null => {
     if (date instanceof Timestamp) return date.toDate();
@@ -164,8 +166,7 @@ const WeeklyExpirationPage = () => {
   };
 
   // Função de filtragem
-  const filterSchedules = (schedules: Schedule[], term: string): Schedule[] => {
-    if (!term) return schedules;
+  const filterSchedules = (schedules: Schedule[], term: string, activeTab: 'expiring' | 'broadcasting', actionFilter: 'all' | 'marcar_ok' | 'desmarcar'): Schedule[] => {
     const lowercasedTerm = term.toLowerCase();
 
     return schedules.filter(schedule => {
@@ -177,12 +178,33 @@ const WeeklyExpirationPage = () => {
       const startDateMatch = startDate ? formatDate(startDate, 'dd/MM/yyyy').includes(lowercasedTerm) : false;
       const endDateMatch = endDate ? formatDate(endDate, 'dd/MM/yyyy').includes(lowercasedTerm) : false;
 
-      return clientNameMatch || startDateMatch || endDateMatch;
+      // Lógica para a coluna "Ação"
+      const isTreated = (activeTab === 'expiring' && schedule.validadeTratada) || (activeTab === 'broadcasting' && schedule.veiculacaoTratada);
+      let actionFilterMatch = true; // Por padrão, corresponde a todos
+
+      if (actionFilter === 'marcar_ok') {
+        actionFilterMatch = !isTreated; // Se 'Marcar OK' for selecionado, mostrar apenas os não tratados
+      } else if (actionFilter === 'desmarcar') {
+        actionFilterMatch = isTreated; // Se 'Desmarcar' for selecionado, mostrar apenas os tratados
+      }
+
+      // Combina o filtro de texto com o filtro de ação
+      const textMatch = clientNameMatch || startDateMatch || endDateMatch;
+
+      if (term && actionFilter !== 'all') {
+        return textMatch && actionFilterMatch;
+      } else if (term) {
+        return textMatch;
+      } else if (actionFilter !== 'all') {
+        return actionFilterMatch;
+      } else {
+        return true; // Nenhum filtro aplicado
+      }
     });
   };
 
-  const filteredExpiringSchedules = filterSchedules(expiringSchedules, searchTerm);
-  const filteredBroadcastSchedules = filterSchedules(broadcastSchedules, searchTerm);
+  const filteredExpiringSchedules = filterSchedules(expiringSchedules, searchTerm, 'expiring', actionFilter);
+  const filteredBroadcastSchedules = filterSchedules(broadcastSchedules, searchTerm, 'broadcasting', actionFilter);
 
   const currentSchedules = activeTab === 'expiring' ? filteredExpiringSchedules : filteredBroadcastSchedules;
   const pendingCount = activeTab === 'expiring' 
@@ -206,8 +228,8 @@ const WeeklyExpirationPage = () => {
           </div>
         </div>
         
-        {/* Campo de busca */}
-        <div className="mb-6">
+        {/* Campo de busca e filtro de ação */}
+        <div className="mb-6 flex gap-4">
           <Input
             type="text"
             placeholder="Buscar por cliente ou data (DD/MM/AAAA)..."
@@ -215,6 +237,16 @@ const WeeklyExpirationPage = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-sm"
           />
+          <Select value={actionFilter} onValueChange={(value: 'all' | 'marcar_ok' | 'desmarcar') => setActionFilter(value)}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar Ação" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Todos</SelectItem>
+              <SelectItem value="marcar_ok">Marcar OK</SelectItem>
+              <SelectItem value="desmarcar">Desmarcar</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Tabs Navigation */}
@@ -279,7 +311,7 @@ const WeeklyExpirationPage = () => {
                                             <TableHead className="text-left">Estilo/Transmissão/Tipo</TableHead>
                                           </>
                                         )}
-                                        <TableHead className="text-right">Ação</TableHead>
+                                        <TableHead className="text-left">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -340,7 +372,7 @@ const WeeklyExpirationPage = () => {
                           )}
                           
                           {/* Coluna de Ação - sempre presente */}
-                          <TableCell className="text-right">
+                          <TableCell className="text-left">
                             <Button 
                               variant="ghost" 
                               size="sm" 
