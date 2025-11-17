@@ -7,6 +7,12 @@
 
 Sistema web avançado para **agendamento e gerenciamento de playlists sazonais de Natal**. Permite a configuração de múltiplos períodos de veiculação, tipos de playlist e estilos para diversos clientes, com um dashboard inteligente para acompanhamento em tempo real e acesso seguro via autenticação.
 
+## 🎬 Apresentação do Projeto
+
+<div align="center">
+  <img src="assets/videos/gifs/apresentacao.gif" alt="Apresentação do Projeto" width="720">
+</div>
+
 ## ✨ Funcionalidades Principais
 
 ### 🔐 Sistema de Autenticação
@@ -206,12 +212,4 @@ Este projeto está sob a licença **MIT**.
 
 [⬆️ Voltar ao topo](#-agendador-natalinas)
 
-</div>
-
----
-
-## 🎬 Apresentação do Projeto
-
-<div align="center">
-  <img src="assets/videos/gifs/apresentacao.gif" alt="Apresentação do Projeto" width="720">
 </div>
