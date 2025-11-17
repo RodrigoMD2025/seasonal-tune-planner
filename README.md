@@ -207,3 +207,30 @@ Este projeto está sob a licença **MIT**.
 [⬆️ Voltar ao topo](#-agendador-natalinas)
 
 </div>
+
+---
+
+## 🎬 Apresentação do Projeto
+
+Você pode adicionar aqui um vídeo de apresentação do projeto. Duas opções comuns:
+
+- Vídeo hospedado no YouTube (embed): substitua <YOUR_YOUTUBE_ID> pelo ID do vídeo.
+
+```html
+<div align="center">
+  <iframe width="720" height="405" src="https://www.youtube.com/embed/<YOUR_YOUTUBE_ID>" title="Apresentação do Projeto" frameborder="0" allowfullscreen></iframe>
+</div>
+```
+
+- Vídeo local no repositório: coloque o arquivo em `assets/videos/presentation.mp4` e use a tag abaixo.
+
+```html
+<div align="center">
+  <video controls width="720">
+    <source src="assets/videos/presentation.mp4" type="video/mp4">
+    Seu navegador não suporta o elemento <code>video</code>.
+  </video>
+</div>
+```
+
+Substitua o conteúdo acima pelo link ou arquivo real. Se for um arquivo local e você quiser que o GitHub Pages sirva o vídeo, confirme que a rota `assets/videos/presentation.mp4` está incluída no build/output do deploy.
