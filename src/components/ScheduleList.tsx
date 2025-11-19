@@ -130,9 +130,17 @@ export const ScheduleList = () => {
     setIsEditDialogOpen(true);
   };
 
-  const filteredSchedules = schedules.filter(schedule => 
-    schedule.clientName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredSchedules = schedules.filter(schedule => {
+    const lowerCaseSearchTerm = searchTerm.toLowerCase();
+    const formattedStartDate = formatDate(schedule.startDate).toLowerCase();
+    const formattedEndDate = formatDate(schedule.endDate).toLowerCase();
+
+    return (
+      schedule.clientName.toLowerCase().includes(lowerCaseSearchTerm) ||
+      formattedStartDate.includes(lowerCaseSearchTerm) ||
+      formattedEndDate.includes(lowerCaseSearchTerm)
+    );
+  });
 
   if (loading) return <div className="p-6 text-center"><Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-4" /><p className="text-muted-foreground">Carregando...</p></div>;
   if (error) return <div className="p-6 text-center text-destructive"><p>{error}</p></div>;
@@ -147,7 +155,7 @@ export const ScheduleList = () => {
         <div className="relative min-w-[300px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input 
-            placeholder="Buscar por cliente..."
+            placeholder="Buscar por cliente ou data..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
