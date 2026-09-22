@@ -13,6 +13,76 @@ Sistema web avançado para **agendamento e gerenciamento de playlists sazonais d
   <img src="assets/videos/gifs/apresentacao.gif" alt="Apresentação do Projeto" width="720">
 </div>
 
+---
+
+## 🎯 Problema de Negócio
+
+O acompanhamento das playlists natalinas veiculadas para os clientes exigia controle manual de múltiplos períodos, datas de início e término, e status de veiculação.
+
+Esse processo apresentava desafios como:
+
+* 📅 dificuldade para acompanhar, cliente a cliente, quais períodos de veiculação estavam ativos, agendados ou já concluídos;
+* ⏳ necessidade de atualizar manualmente o status de cada agendamento conforme as datas avançavam;
+* 🔎 falta de uma visão consolidada de quantos clientes tinham veiculação ativa em um determinado dia;
+* 🚨 risco de perder o prazo de validade de um período sem perceber a tempo;
+* 📋 nenhuma visão semanal unificada de validades e veiculações para tratamento;
+* 📊 dificuldade para gerar relatórios filtrados e formatados para análise externa;
+* 🔐 ausência de controle de acesso ao sistema de agendamentos.
+
+O problema central era transformar o agendamento e o acompanhamento de playlists sazonais em um **processo centralizado, com status automático e visibilidade em tempo real**.
+
+---
+
+## 💡 Solução Desenvolvida
+
+Foi desenvolvido um sistema web completo de agendamento, com autenticação, dashboard de métricas e gestão de status automatizada:
+
+```text
+Cadastro do cliente e do período
+        ↓
+Login autenticado (Firebase Authentication)
+        ↓
+Agendamento do período de veiculação
+        ↓
+Firestore (dados em tempo real)
+        ↓
+Atualização automática de status
+   (Agendado → Em Veiculação → Concluída)
+        ↓
+Dashboard com métricas e gráficos
+        ↓
+Gestão Semanal + Relatórios (Excel/CSV)
+```
+
+A solução combina **React, TypeScript, Firebase (Firestore + Authentication) e Recharts** para transformar o acompanhamento manual de playlists natalinas em um fluxo automatizado, seguro e visual, com:
+
+- 🔐 **Login seguro** com rotas protegidas e sessão persistente
+- 📊 **Dashboard em tempo real** com cards e gráficos de métricas-chave
+- 🔄 **Status dinâmico automático** (`Agendado` → `Em Veiculação` → `Concluída`)
+- 📋 **Gestão semanal unificada** de validades e veiculações
+- 📈 **Relatórios exportáveis** em Excel/CSV com filtros e ordenação
+- 🏢 **Cadastro e importação em lote** de clientes
+
+---
+
+## 📈 Resultado
+
+A automação transformou um controle manual e disperso em um fluxo centralizado, com status sempre atualizado e visibilidade imediata da operação.
+
+### Ganhos observados
+
+* 📊 visão consolidada e em tempo real de validades próximas, clientes agendados e veiculações ativas;
+* 🔄 eliminação da atualização manual de status: o sistema transiciona `Agendado` → `Em Veiculação` → `Concluída` sozinho, considerando o horário exato do período;
+* 📋 acompanhamento semanal mais rápido, com validades e veiculações reunidas em uma única página com abas;
+* 📈 geração de relatórios filtrados (por status, cliente ou data) em Excel/CSV sem trabalho manual de planilha;
+* 🔐 acesso ao sistema restrito a usuários autorizados, com sessão persistente entre acessos;
+* 🏢 cadastro de clientes mais ágil, com importação em lote e histórico de períodos visível ao agendar um novo;
+* 🎨 comunicação visual mais clara do status de cada agendamento, com tags coloridas por estado.
+
+> **Nota:** os ganhos acima representam funcionalidades e melhorias observáveis proporcionadas pelo sistema. Não são apresentados percentuais de produtividade sem uma medição formal do processo antes e depois da implementação.
+
+---
+
 ## ✨ Funcionalidades Principais
 
 ### 🔐 Sistema de Autenticação
