@@ -10,6 +10,7 @@ import { ImportClientsDialog } from "./ImportClientsDialog";
 import { ReportGenerator } from "./ReportGenerator";
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
+import { ThemeToggle } from './ThemeToggle';
 
 import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -219,6 +220,7 @@ const Dashboard = () => {
                   <Settings className="w-4 h-4" />
                 </Button>
               </Link>
+              <ThemeToggle />
               <Button variant="ghost" size="icon" onClick={logout} title="Logout">
                 <LogOut className="w-4 h-4" />
               </Button>
@@ -265,7 +267,7 @@ const Dashboard = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                            <Tooltip cursor={{ fill: '#f3f4f6' }} formatter={(value) => `${value}`}/>
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} formatter={(value) => `${value}`}/>
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {cardBarData.map((entry, index) => (<Cell key={`cell-${index}`} fill={barColor} />))}
                             </Bar>

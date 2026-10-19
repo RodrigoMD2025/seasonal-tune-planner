@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Music } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -32,7 +33,10 @@ export const LoginPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="relative flex items-center justify-center min-h-screen bg-gradient-subtle">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <Card className="w-full max-w-md mx-4">
         <CardHeader className="text-center">
           <div className="flex justify-center items-center mb-4">

@@ -11,6 +11,7 @@ import { Link } from 'react-router-dom';
 import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 import { Input } from '@/components/ui/input'; // Adicionado: Import do componente Input
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 interface Schedule {
   id: string;
@@ -218,13 +219,16 @@ const WeeklyExpirationPage = () => {
           <Link to="/">
             <Button variant="outline" size="sm"><ArrowLeft className="w-4 h-4 mr-2" />Voltar ao Dashboard</Button>
           </Link>
-          <div className="text-right">
-            <p className="text-lg font-semibold text-foreground">
-              {pendingCount} / {currentSchedules.length}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {activeTab === 'expiring' ? 'Pendentes / Total Expirando' : 'Pendentes / Total em Veiculação'}
-            </p>
+          <div className="flex items-center gap-4">
+            <div className="text-right">
+              <p className="text-lg font-semibold text-foreground">
+                {pendingCount} / {currentSchedules.length}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {activeTab === 'expiring' ? 'Pendentes / Total Expirando' : 'Pendentes / Total em Veiculação'}
+              </p>
+            </div>
+            <ThemeToggle />
           </div>
         </div>
         
