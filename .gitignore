@@ -26,3 +26,6 @@ dist-ssr
 
 # Ignore Environment Variables file
 .env
+
+# Backups locais do Firestore (contêm dados de clientes)
+backups/

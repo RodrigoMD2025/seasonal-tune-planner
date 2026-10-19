@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist",
+    "deploy:rules": "npx firebase-tools deploy --only firestore:rules",
     "test": "jest",
     "start:api": "ts-node api/index.ts"
   },

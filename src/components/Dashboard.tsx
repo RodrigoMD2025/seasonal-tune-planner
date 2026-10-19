@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle } from "lucide-react";
+import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
 import { useEffect, useState } from "react";
@@ -214,6 +214,11 @@ const Dashboard = () => {
               <ReportGenerator />
               <Button variant="outline" onClick={() => setIsImportDialogOpen(true)} className="shadow-sm"><FileSpreadsheet className="w-4 h-4 mr-2" />Importar Clientes</Button>
               <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-christmas shadow-christmas"><Plus className="w-4 h-4 mr-2" />Novo Agendamento</Button>
+              <Link to="/configuracoes">
+                <Button variant="ghost" size="icon" title="Configurações">
+                  <Settings className="w-4 h-4" />
+                </Button>
+              </Link>
               <Button variant="ghost" size="icon" onClick={logout} title="Logout">
                 <LogOut className="w-4 h-4" />
               </Button>

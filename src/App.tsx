@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard';
 import WeeklyExpirationPage from './pages/WeeklyExpiration';
 import NotFound from './pages/NotFound';
 import { LoginPage } from './pages/Login';
+import SettingsPage from './pages/Settings';
 import { ProtectedRoute } from './components/ProtectedRoute';
 
 function App() {
@@ -25,6 +26,14 @@ function App() {
         element={
           <ProtectedRoute>
             <WeeklyExpirationPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/configuracoes"
+        element={
+          <ProtectedRoute>
+            <SettingsPage />
           </ProtectedRoute>
         }
       />

@@ -145,6 +145,13 @@ A automação transformou um controle manual e disperso em um fluxo centralizado
 - ✅ **Cadastro Simplificado:** Adicione e gerencie clientes facilmente.
 - ✅ **Importação em Lote:** Importe uma lista de clientes diretamente de um arquivo.
 
+### 🔄 Reset Anual de Agendamentos
+- ✅ **Tela de Configurações:** Acesse pelo ícone de engrenagem no dashboard (rota `/configuracoes`).
+- ✅ **Backup Automático:** Antes de qualquer exclusão, o sistema baixa um arquivo JSON com todos os agendamentos.
+- ✅ **Exclusão em Lote:** Remove todos os agendamentos com segurança, em lotes, sem afetar os clientes.
+- ✅ **Dupla Confirmação:** A ação só é liberada ao digitar `ZERAR` no diálogo de confirmação.
+- ✅ **Uso Anual:** Ideal para encerrar um ciclo natalino e iniciar o próximo com a base de clientes intacta.
+
 ### 💡 Experiência de Uso (UX) Aprimorada
 - ✅ **Adição Inteligente de Períodos:** Ao criar um novo agendamento, o sistema exibe o histórico de períodos do cliente selecionado, tornando a adição de novos períodos mais contextual e eficiente.
 - ✅ **Interface Responsiva:** Acesse e gerencie o sistema de qualquer dispositivo.
@@ -248,6 +255,9 @@ A automação transformou um controle manual e disperso em um fluxo centralizado
     ```bash
     npm run dev
     ```
+
+> 🔐 **Importante:** antes de publicar alterações, leia o guia de segurança do Firestore em
+> [`docs/seguranca-firestore.md`](docs/seguranca-firestore.md).
 
 ### Deploy (GitHub Pages)
 O deploy é feito automaticamente via GitHub Actions toda vez que um novo commit é enviado para a branch `main`.
