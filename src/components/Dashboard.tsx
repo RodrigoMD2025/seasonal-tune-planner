@@ -47,18 +47,15 @@ type WeeklyChartType = 'expiring' | 'broadcasting';
 const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
 
-// Tooltip dos gráficos de barra: mostra o dia da semana e "1 Cliente" / "2 Clientes"
-const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+// Tooltip dos gráficos de barra: mostra apenas "1 Cliente" / "2 Clientes"
+const BarChartTooltip = ({ active, payload }: TooltipProps<number, string>) => {
   if (!active || !payload || payload.length === 0) return null;
 
   const count = Number(payload[0]?.value ?? 0);
 
   return (
     <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
-      <p className="font-medium mb-1">{label}</p>
-      <p>
-        {count} {count === 1 ? 'Cliente' : 'Clientes'}
-      </p>
+      {count} {count === 1 ? 'Cliente' : 'Clientes'}
     </div>
   );
 };
