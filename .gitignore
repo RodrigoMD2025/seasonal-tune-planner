@@ -29,3 +29,6 @@ dist-ssr
 
 # Backups locais do Firestore (contêm dados de clientes)
 backups/
+
+# Planilhas locais com dados de clientes
+docs/*.xlsx
