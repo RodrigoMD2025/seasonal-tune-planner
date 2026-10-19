@@ -14,7 +14,7 @@ import { ThemeToggle } from './ThemeToggle';
 
 import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, type TooltipProps } from 'recharts';
 import { getStartOfWeek, getEndOfWeek, isDateInCurrentWeek, formatDate } from '@/lib/date-utils';
 import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 
@@ -46,6 +46,22 @@ type WeeklyChartType = 'expiring' | 'broadcasting';
 
 const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
+
+// Tooltip dos gráficos de barra: mostra o dia da semana e "1 Cliente" / "2 Clientes"
+const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const count = Number(payload[0]?.value ?? 0);
+
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
+      <p className="font-medium mb-1">{label}</p>
+      <p>
+        {count} {count === 1 ? 'Cliente' : 'Clientes'}
+      </p>
+    </div>
+  );
+};
 
 const Dashboard = () => {
   const { logout } = useAuth();
@@ -267,7 +283,7 @@ const Dashboard = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} formatter={(value) => `${value}`}/>
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip />} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {cardBarData.map((entry, index) => (<Cell key={`cell-${index}`} fill={barColor} />))}
                             </Bar>
@@ -283,7 +299,7 @@ const Dashboard = () => {
                             <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
                               {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_VEICULACAO[index % PIE_COLORS_VEICULACAO.length]} />))}
                             </Pie>
-                            <Tooltip formatter={(value) => `${value} cliente(s)`} />
+                            <Tooltip formatter={(value) => `${value} ${Number(value) === 1 ? 'cliente' : 'clientes'}`} />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className="flex justify-center gap-4 text-xs mt-2">
@@ -300,7 +316,7 @@ const Dashboard = () => {
                             <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
                               {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_AGENDADOS[index % PIE_COLORS_AGENDADOS.length]} />))}
                             </Pie>
-                            <Tooltip formatter={(value) => `${value} cliente(s)`} />
+                            <Tooltip formatter={(value) => `${value} ${Number(value) === 1 ? 'cliente' : 'clientes'}`} />
                           </PieChart>
                         </ResponsiveContainer>
                         <div className="flex justify-center gap-4 text-xs mt-2">
