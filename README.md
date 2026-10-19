@@ -157,6 +157,7 @@ A automação transformou um controle manual e disperso em um fluxo centralizado
 - ✅ **Interface Responsiva:** Acesse e gerencie o sistema de qualquer dispositivo.
 - ✅ **Configuração Otimizada:** Environment variables organizadas para desenvolvimento e produção.
 - ✅ **Visual Refinado:** Interface com cores temáticas natalinas e componentes padronizados.
+- ✅ **Modo Noturno:** Alternância entre tema claro e escuro em todas as telas (login e sistema), com preferência salva no navegador e respeito ao tema do sistema operacional.
 - ✅ **Feedback Visual:** Tags coloridas para diferentes estados (Verde: ativo, Amarelo: agendado, Cinza escuro: concluída).
 - ✅ **Layout Otimizado:** Header reorganizado para melhor distribuição dos botões de ação.
 - ✅ **Gestão de Dados:** Sistema robusto de tratamento de timestamps do Firestore.
@@ -164,6 +165,17 @@ A automação transformou um controle manual e disperso em um fluxo centralizado
 ---
 
 ## 🆕 Melhorias Recentes
+
+### v3.2.0 - Modo Noturno
+- ✅ **Alternância de Tema:** Botão de lua/sol no login, dashboard, validade semanal e configurações.
+- ✅ **Preferência Persistente:** Tema salvo no navegador, com opção de seguir o tema do sistema operacional.
+- ✅ **Paleta Escura Temática:** Cores natalinas adaptadas ao modo escuro, incluindo gráficos, tooltips, tabelas e formulários.
+- ✅ **Sem Flash de Tema:** Script inicial aplica o tema antes da renderização da página.
+
+### v3.1.0 - Reset Anual de Agendamentos
+- ✅ **Tela de Configurações:** Contadores de agendamentos/clientes e backup manual em JSON.
+- ✅ **Reset Anual Seguro:** Exclusão de todos os agendamentos em lotes, com backup automático e confirmação por digitação, mantendo a base de clientes intacta.
+- ✅ **Estilos Dinâmicos na Edição:** O diálogo de edição de cliente carrega todos os estilos existentes na base.
 
 ### v3.0.0 - Sistema de Autenticação
 - ✅ **Implementação de Login:** Adicionada página de login com autenticação via e-mail e senha.
@@ -221,6 +233,7 @@ A automação transformou um controle manual e disperso em um fluxo centralizado
 - **[React Router](https://reactrouter.com/)** - Roteamento para SPAs
 - **[Tailwind CSS](https://tailwindcss.com/)** - Framework CSS utility-first
 - **[shadcn/ui](https://ui.shadcn.com/)** - Componentes UI elegantes
+- **[next-themes](https://github.com/pacocoursey/next-themes)** - Gerenciamento de tema claro/escuro
 - **[Recharts](https://recharts.org/)** - Gráficos para React
 - **[XLSX](https://www.npmjs.com/package/xlsx)** - Biblioteca para geração de arquivos Excel/CSV
 
