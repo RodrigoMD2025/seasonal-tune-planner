@@ -6,9 +6,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, User } from "lucide-react";
 import { useState, useEffect } from "react";
-import { doc, updateDoc } from 'firebase/firestore'; // Importar doc e updateDoc
+import { collection, doc, getDocs, updateDoc } from 'firebase/firestore'; // Importar doc e updateDoc
 import { db } from '../config/firebase'; // Importar a instância do Firestore
 import { useToast } from "@/hooks/use-toast"; // Importar useToast
+
+const DEFAULT_MUSIC_STYLES = ["CMD", "ICMD", "FMD", "APMD", "LMD"];
 
 interface Client {
   id: string;
@@ -34,6 +36,7 @@ export const EditClientDialog = ({ open, onOpenChange, clientToEdit, onClientUpd
   const [email, setEmail] = useState("");
   const [contact, setContact] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
+  const [musicStyles, setMusicStyles] = useState<string[]>(DEFAULT_MUSIC_STYLES);
   const { toast } = useToast(); // Inicializar useToast
 
   useEffect(() => {
@@ -46,6 +49,46 @@ export const EditClientDialog = ({ open, onOpenChange, clientToEdit, onClientUpd
       setStatus(clientToEdit.status);
     }
   }, [clientToEdit]);
+
+  // Carrega os estilos já usados na base para não perder opções ao editar.
+  useEffect(() => {
+    if (!open) return;
+
+    let cancelled = false;
+
+    const fetchMusicStyles = async () => {
+      try {
+        const snapshot = await getDocs(collection(db, "clients"));
+        const styles = new Set<string>(DEFAULT_MUSIC_STYLES);
+
+        snapshot.docs.forEach((clientDoc) => {
+          const style = String(clientDoc.data().musicStyle ?? "").trim();
+          if (style) styles.add(style);
+        });
+
+        // Garante que o estilo atual do cliente apareça, mesmo se não estiver na base.
+        if (clientToEdit?.musicStyle) {
+          styles.add(clientToEdit.musicStyle);
+        }
+
+        const extras = [...styles]
+          .filter((style) => !DEFAULT_MUSIC_STYLES.includes(style))
+          .sort((a, b) => a.localeCompare(b));
+
+        if (!cancelled) {
+          setMusicStyles([...DEFAULT_MUSIC_STYLES, ...extras]);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar estilos musicais:", error);
+      }
+    };
+
+    fetchMusicStyles();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [open, clientToEdit]);
 
   const handleSubmit = async (e: React.FormEvent) => { // Adicionado 'async'
     e.preventDefault();
@@ -84,10 +127,6 @@ export const EditClientDialog = ({ open, onOpenChange, clientToEdit, onClientUpd
       });
     }
   };
-
-  const musicStyles = [
-    "CMD", "ICMD", "FMD", "APMD", "LMD"
-  ];
 
   if (!clientToEdit) return null;
 
