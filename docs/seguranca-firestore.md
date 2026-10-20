@@ -54,6 +54,12 @@ A publicação das regras não apaga dados, mas o backup é uma segurança extra
 
 4. Clique em **Publicar**. A propagação pode levar cerca de 1 minuto.
 
+> **Se o link de regras redirecionar para o overview:** normalmente é conta Google errada
+> ou falta de permissão. Confirme o projeto em **Configurações do Projeto → Geral**, verifique
+> seu papel em **Configurações do Projeto → Usuários e permissões** (é preciso ser **Owner**
+> ou **Editor**) e entre com a conta dona do projeto. Como alternativa, use a CLI (Opção B),
+> que não depende do redirecionamento do Console.
+
 ### 3. Desabilite o cadastro público de novas contas (muito importante)
 
 Com o cadastro aberto, qualquer pessoa pode criar uma conta usando a API key pública e, com a
