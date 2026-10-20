@@ -32,3 +32,8 @@ backups/
 
 # Planilhas locais com dados de clientes
 docs/*.xlsx
+
+# Chaves de service account do Firebase (nunca commitar)
+*firebase-adminsdk*.json
+firebase-service-account*.json
+serviceAccountKey*.json
