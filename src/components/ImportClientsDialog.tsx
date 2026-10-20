@@ -170,6 +170,14 @@ export const ImportClientsDialog = ({ open, onOpenChange }: ImportClientsDialogP
           </DialogDescription>
         </DialogHeader>
 
+        <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/50 p-3 text-sm text-muted-foreground">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <p>
+            A importação <strong>apenas cadastra novos clientes</strong>. Para editar o nome ou o estilo musical,
+            ou excluir um cliente, feche esta janela e use a aba <strong>Clientes</strong> com o filtro de busca.
+          </p>
+        </div>
+
         <div className="space-y-6">
           {/* Instruções e Template */}
           <Card>

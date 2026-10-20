@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Save, User } from "lucide-react";
 import { useState, useEffect } from "react";
-import { collection, doc, getDocs, updateDoc } from 'firebase/firestore'; // Importar doc e updateDoc
+import { collection, doc, getDocs, query, where, writeBatch } from 'firebase/firestore';
 import { db } from '../config/firebase'; // Importar a instância do Firestore
 import { useToast } from "@/hooks/use-toast"; // Importar useToast
 
@@ -19,7 +19,7 @@ interface Client {
   phone?: string;
   email?: string;
   contact?: string;
-  status: "active" | "inactive";
+  status?: "active" | "inactive";
 }
 
 interface EditClientDialogProps {
@@ -46,7 +46,7 @@ export const EditClientDialog = ({ open, onOpenChange, clientToEdit, onClientUpd
       setPhone(clientToEdit.phone || "");
       setEmail(clientToEdit.email || "");
       setContact(clientToEdit.contact || "");
-      setStatus(clientToEdit.status);
+      setStatus(clientToEdit.status ?? "active");
     }
   }, [clientToEdit]);
 
@@ -102,21 +102,52 @@ export const EditClientDialog = ({ open, onOpenChange, clientToEdit, onClientUpd
       return;
     }
 
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      toast({
+        title: "Erro",
+        description: "Informe o nome do cliente.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       const clientRef = doc(db, "clients", clientToEdit.id);
-      await updateDoc(clientRef, {
-        name: name,
+      const nameChanged = trimmedName !== clientToEdit.name;
+      const styleChanged = musicStyle !== clientToEdit.musicStyle;
+
+      // Mantém os agendamentos vinculados em sincronia quando nome ou estilo mudam.
+      const linkedSchedules = nameChanged || styleChanged
+        ? await getDocs(query(collection(db, "schedules"), where("client", "==", clientToEdit.id)))
+        : null;
+
+      const batch = writeBatch(db);
+
+      batch.update(clientRef, {
+        name: trimmedName,
         musicStyle: musicStyle, // Usar musicStyle do estado
         phone: phone,
         email: email,
         contact: contact,
         status: status,
       });
+
+      linkedSchedules?.docs.forEach((scheduleDoc) => {
+        batch.update(scheduleDoc.ref, {
+          clientName: trimmedName,
+          musicStyle: musicStyle,
+        });
+      });
+
+      await batch.commit();
+
       onClientUpdated(); // Recarrega a lista de clientes
       onOpenChange(false); // Fecha o diálogo após salvar
       toast({
         title: "Sucesso!",
-        description: `Cliente "${name}" atualizado com sucesso.`,
+        description: `Cliente "${trimmedName}" atualizado com sucesso.`,
       });
     } catch (error) {
       console.error("Erro ao atualizar cliente:", error);

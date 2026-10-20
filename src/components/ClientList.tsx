@@ -20,7 +20,7 @@ interface Client {
   email?: string; 
   phone?: string;
   contact?: string;
-  status: "active" | "inactive";
+  status?: "active" | "inactive";
   createdAt: Date;
 }
 
@@ -99,7 +99,7 @@ export const ClientList = () => {
     try {
       // 1. Excluir agendamentos associados a este cliente
       const schedulesRef = collection(db, "schedules");
-      const q = query(schedulesRef, where("client", "==", clientName));
+      const q = query(schedulesRef, where("client", "==", clientId));
       const querySnapshot = await getDocs(q);
       const deletePromises = querySnapshot.docs.map(sDoc => deleteDoc(doc(db, "schedules", sDoc.id)));
       await Promise.all(deletePromises);
@@ -223,7 +223,13 @@ export const ClientList = () => {
                     </div>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => handleEditClient(client)}>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleEditClient(client)}
+                      title="Editar cliente"
+                      aria-label={`Editar cliente ${client.name}`}
+                    >
                       <Edit className="w-4 h-4" />
                     </Button>
                     <Button 
@@ -231,6 +237,8 @@ export const ClientList = () => {
                       size="sm" 
                       className="text-destructive hover:text-destructive"
                       onClick={() => handleDeleteClient(client.id, client.name)}
+                      title="Excluir cliente"
+                      aria-label={`Excluir cliente ${client.name}`}
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>
