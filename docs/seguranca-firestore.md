@@ -1,19 +1,20 @@
-# 🔐 Segurança do Firestore — Ação necessária
+# 🔐 Segurança do Firestore — Guia e status
 
 ## Status atual (verificado em 20/10/2026)
 
-- O banco do projeto `seasonal-tune-planner` **ainda está acessível sem autenticação**.
-  - Um teste de leitura anônima via API REST retornou **HTTP 200** com dados de clientes.
-  - O acesso não depende do site: qualquer pessoa com a API key pública (embutida no JavaScript)
-    pode consultar o Firestore diretamente.
-- A base atual tem **147 clientes e 4 agendamentos**.
-- O **cadastro público de novas contas** no Firebase Authentication está **habilitado**
-  (o endpoint de criação de conta aceita o cadastro). Isso significa que a regra
-  `request.auth != null` sozinha **não é suficiente**: alguém poderia criar uma conta e acessar o banco.
-- As regras corretas deste repositório ([`firestore.rules`](../firestore.rules)) **ainda não foram publicadas**.
+- ✅ As regras de [`firestore.rules`](../firestore.rules) foram **publicadas** no projeto
+  `seasonal-tune-planner`.
+- ✅ Leitura anônima via API REST agora retorna **HTTP 403 / PERMISSION_DENIED**.
+- ✅ O **cadastro público de novas contas** foi **desativado** no Firebase Authentication
+  (`client.permissions.disabledUserSignup = true`).
+- ✅ A base permanece com **147 clientes e 4 agendamentos**.
+- ⚠️ A chave de service account usada no deploy deve ser **revogada** no Google Cloud Console
+  assim que não for mais necessária. Ela não foi commitada; o `.gitignore` cobre
+  `*firebase-adminsdk*.json`.
 
-> ⚠️ Enquanto isso, os dados de clientes (nomes, e-mails, telefones, estilos) e agendamentos
-> podem ser lidos, alterados ou excluídos por qualquer pessoa, sem login.
+> **Resultado:** o Firestore agora exige um usuário autenticado e não é mais acessível apenas
+> com a API key pública. Mantenha o cadastro público desativado ou use a allowlist de UIDs
+> abaixo para uma proteção adicional.
 
 ## Por que isso é importante
 
@@ -23,10 +24,10 @@
   acessível por qualquer cliente HTTP; sem regras, o login pode ser contornado.
 - **Riscos concretos:** vazamento de dados de clientes (privacidade/LGPD), alteração de agendamentos
   e exclusão total de clientes/agendamentos.
-- O app tem uma função de **reset anual** que apaga agendamentos; uma pessoa mal-intencionada
-  poderia fazer algo equivalente sem estar logada.
+- O app tem uma função de **reset anual** que apaga agendamentos; antes da correção, uma pessoa
+  mal-intencionada poderia fazer algo equivalente sem estar logada.
 
-## O que fazer (passo a passo)
+## Como publicar as regras (referência)
 
 ### 1. Faça um backup (precaução)
 
@@ -61,6 +62,9 @@ A publicação das regras não apaga dados, mas o backup é uma segurança extra
 > que não depende do redirecionamento do Console.
 
 ### 3. Desabilite o cadastro público de novas contas (muito importante)
+
+> ✅ **Status:** já desativado em 20/10/2026. A configuração efetiva é
+> `client.permissions.disabledUserSignup = true` (Identity Platform Admin API).
 
 Com o cadastro aberto, qualquer pessoa pode criar uma conta usando a API key pública e, com a
 regra acima, ter acesso total.
@@ -109,8 +113,10 @@ ser atualizada.
 
 - **Logado:** abra o dashboard, a aba Clientes, edite/salve um cliente e confira a validade semanal.
 - **Sem login:** abra o site em uma aba anônima; ele deve redirecionar para o login.
-- **Acesso direto:** uma leitura REST sem token deve retornar **403 PERMISSION_DENIED**.
-  Se ainda retornar 200, aguarde a propagação e confira se publicou no projeto correto.
+- **Acesso direto:** uma leitura REST sem token deve retornar **403 PERMISSION_DENIED**
+  (validado em 20/10/2026). Se ainda retornar 200, aguarde a propagação e confira o projeto.
+- **Cadastro público:** uma tentativa de criar conta via API deve retornar
+  `ADMIN_ONLY_OPERATION` (cadastro desativado).
 - **Edição/exclusão:** confirme que salvar e excluir clientes continuam funcionando com a sessão logada.
 
 ### 6. Atenção a automações
@@ -129,6 +135,23 @@ npx firebase-tools use seasonal-tune-planner
 npm run deploy:rules
 ```
 
+Com uma service account, sem login interativo:
+
+```bash
+export GOOGLE_APPLICATION_CREDENTIALS=/caminho/para/chave.json
+npx firebase-tools deploy --only firestore:rules --project seasonal-tune-planner
+```
+
+> **Troubleshooting — `403` em `serviceusage.googleapis.com`:** a CLI tenta confirmar se a API
+> do Firestore está ativa. Se a service account não tiver `serviceusage.services.get`, o deploy
+> para antes de publicar. Nesse caso, conceda **Service Usage Viewer**
+> (`roles/serviceusage.serviceUsageViewer`) à service account ou publique diretamente pela
+> Firebase Rules API (`projects.rulesets.create` + `projects.releases.update`). Foi esse o
+> caminho usado no deploy de 20/10/2026.
+
+> 🔑 **Chave de service account:** nunca commite o JSON. O `.gitignore` já cobre
+> `*firebase-adminsdk*.json`. Revogue a chave no Google Cloud Console depois do uso.
+
 O script `deploy:rules` executa `firebase deploy --only firestore:rules` com o
 `firestore.rules` deste repositório.
 
@@ -136,7 +159,8 @@ O script `deploy:rules` executa `firebase deploy --only firestore:rules` com o
 
 - **A API key do Firebase não é um segredo** — ela é pública por design e identifica o projeto.
   A segurança real vem das **regras do Firestore** e do **Firebase Authentication**.
-- Depois da correção, o acesso anônimo via REST (apenas com a API key) deixa de funcionar.
+- O acesso anônimo via REST (apenas com a API key) agora retorna **403** (validado em 20/10/2026).
+- O cadastro público está desativado; novas contas só podem ser criadas pelo Admin SDK/Console.
 - A funcionalidade de **reset anual** (Configurações → Zerar agendamentos) continua funcionando
   para usuários autenticados, pois utiliza a sessão do Firebase Auth do app.
 - Se no futuro houver mais de um perfil de usuário (ex.: somente leitura), as regras podem ser
