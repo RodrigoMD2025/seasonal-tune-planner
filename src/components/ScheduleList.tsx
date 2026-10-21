@@ -163,26 +163,24 @@ export const ScheduleList = () => {
         </div>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredSchedules.map((schedule) => {
           const dynamicStatus = getDynamicStatus(schedule);
           return (
-            <Card key={schedule.id} className="shadow-sm border-border/50 hover:shadow-md transition-all">
+            <Card key={schedule.id} className="h-full shadow-sm border-border/50 hover:shadow-md transition-all">
               <CardHeader className="pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div>
-                      <CardTitle className="text-base font-medium text-foreground text-left">
-                        {schedule.clientName} <span className="text-sm text-muted-foreground font-normal">- {schedule.period}</span>
-                      </CardTitle>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={getMusicStyleColor(schedule.musicStyle)}>{schedule.musicStyle}</Badge>
-                        <Badge className={getStatusColor(dynamicStatus)}>{getStatusText(dynamicStatus)}</Badge>
-                        <Badge className={getBroadcastColor(schedule.broadcast)}>{schedule.broadcast}</Badge>
-                      </div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <CardTitle className="text-base font-medium text-foreground text-left">
+                      {schedule.clientName} <span className="text-sm text-muted-foreground font-normal">- {schedule.period}</span>
+                    </CardTitle>
+                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                      <Badge className={getMusicStyleColor(schedule.musicStyle)}>{schedule.musicStyle}</Badge>
+                      <Badge className={getStatusColor(dynamicStatus)}>{getStatusText(dynamicStatus)}</Badge>
+                      <Badge className={getBroadcastColor(schedule.broadcast)}>{schedule.broadcast}</Badge>
                     </div>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex shrink-0 gap-2">
                     <Button variant="ghost" size="sm" onClick={() => handleEditSchedule(schedule)}><Edit className="w-4 h-4" /></Button>
                     <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteSchedule(schedule.id)}><Trash2 className="w-4 h-4" /></Button>
                   </div>
