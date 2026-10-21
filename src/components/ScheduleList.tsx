@@ -3,13 +3,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Music, Edit, Trash2, Loader2, Search } from "lucide-react";
-import { formatDate } from "@/lib/date-utils";
+import { Calendar, Music, Edit, Trash2, Loader2, Search, X } from "lucide-react";
+import { formatDate, getStartOfWeek, isDateInCurrentWeek } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
 import { collection, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { EditScheduleDialog } from './EditScheduleDialog';
-import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
+import { parse, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 
 interface Schedule {
   id: string;
@@ -21,6 +21,12 @@ interface Schedule {
   broadcast: string;
   period: string;
   status: "draft" | "scheduled" | "active" | "completed" | "cancelled";
+  createdAt?: string | Timestamp;
+}
+
+interface ScheduleListProps {
+  createdDayFilter?: number | null;
+  onClearCreatedDayFilter?: () => void;
 }
 
 const parseDate = (date: string | Timestamp): Date | null => {
@@ -84,7 +90,7 @@ const getMusicStyleColor = (style: string) => {
   return "bg-blue-500 text-white";
 };
 
-export const ScheduleList = () => {
+export const ScheduleList = ({ createdDayFilter = null, onClearCreatedDayFilter }: ScheduleListProps) => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -130,15 +136,29 @@ export const ScheduleList = () => {
     setIsEditDialogOpen(true);
   };
 
+  const selectedDayLabel = createdDayFilter !== null
+    ? formatDate(addDays(getStartOfWeek(new Date()), createdDayFilter), "EEEE, dd/MM")
+    : null;
+
   const filteredSchedules = schedules.filter(schedule => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     const formattedStartDate = formatDate(schedule.startDate).toLowerCase();
     const formattedEndDate = formatDate(schedule.endDate).toLowerCase();
 
-    return (
+    const matchesSearch = (
       schedule.clientName.toLowerCase().includes(lowerCaseSearchTerm) ||
       formattedStartDate.includes(lowerCaseSearchTerm) ||
       formattedEndDate.includes(lowerCaseSearchTerm)
+    );
+
+    if (!matchesSearch) return false;
+    if (createdDayFilter === null) return true;
+
+    const createdAt = schedule.createdAt ? parseDate(schedule.createdAt) : null;
+    return Boolean(
+      createdAt &&
+      isDateInCurrentWeek(createdAt) &&
+      createdAt.getDay() === createdDayFilter
     );
   });
 
@@ -147,21 +167,46 @@ export const ScheduleList = () => {
 
   return (
     <div className="p-6">
-      <div className="flex items-center justify-between mb-6 gap-4">
+      <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
         <div className="text-left">
           <h3 className="text-lg font-semibold text-foreground">Agendamentos de Playlist</h3>
           <p className="text-sm text-muted-foreground">Gerencie as programações natalinas dos clientes</p>
         </div>
-        <div className="relative min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input 
-            placeholder="Buscar por cliente ou data..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+        <div className="flex w-full items-center gap-2 lg:w-auto">
+          <div className="relative min-w-0 flex-1 lg:min-w-[300px]">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por cliente ou data..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClearCreatedDayFilter}
+            disabled={createdDayFilter === null || !onClearCreatedDayFilter}
+            className="shrink-0"
+            title="Limpar filtro de dia"
+          >
+            <X className="h-4 w-4 sm:mr-2" />
+            <span className="hidden sm:inline">Limpar filtro</span>
+            <span className="sm:hidden">Limpar</span>
+          </Button>
         </div>
       </div>
+
+      {createdDayFilter !== null && selectedDayLabel && (
+        <div className="mb-4 flex flex-wrap items-center gap-2 rounded-lg border border-border/50 bg-muted/40 px-3 py-2 text-sm">
+          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <span className="text-muted-foreground">Agendamentos criados em</span>
+          <Badge variant="secondary">{selectedDayLabel}</Badge>
+          <span className="text-muted-foreground">
+            • {filteredSchedules.length} {filteredSchedules.length === 1 ? 'resultado' : 'resultados'}
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredSchedules.map((schedule) => {
@@ -206,6 +251,11 @@ export const ScheduleList = () => {
                     </div>
                   </div>
                 </div>
+                {createdDayFilter !== null && schedule.createdAt && (
+                  <p className="mt-3 text-xs text-muted-foreground">
+                    Criado em {formatDate(schedule.createdAt, "dd/MM/yyyy 'às' HH:mm")}
+                  </p>
+                )}
               </CardContent>
             </Card>
           );
@@ -217,7 +267,11 @@ export const ScheduleList = () => {
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <h3 className="text-lg font-medium text-foreground mb-2">Nenhum agendamento encontrado</h3>
           <p className="text-muted-foreground mb-4">
-            {searchTerm ? `Nenhum resultado para "${searchTerm}".` : "Crie um agendamento para vê-lo aqui."}
+            {createdDayFilter !== null
+              ? `Nenhum agendamento encontrado para ${selectedDayLabel}${searchTerm ? ` com a busca "${searchTerm}"` : ''}.`
+              : searchTerm
+                ? `Nenhum resultado para "${searchTerm}".`
+                : "Crie um agendamento para vê-lo aqui."}
           </p>
         </div>
       )}

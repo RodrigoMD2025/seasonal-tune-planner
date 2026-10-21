@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CreateScheduleDialog } from "./CreateScheduleDialog";
 import { ImportClientsDialog } from "./ImportClientsDialog";
 import { ReportGenerator } from "./ReportGenerator";
@@ -25,6 +25,7 @@ interface Schedule {
   endDate: Timestamp | string;
   period: string;
   validadeTratada?: boolean;
+  createdAt?: Timestamp | string;
 }
 
 interface DashboardStat {
@@ -46,6 +47,7 @@ type WeeklyChartType = 'expiring' | 'broadcasting';
 
 const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
+const DAYS_OF_WEEK = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
 // Tooltip dos gráficos de barra: mostra apenas "1 Cliente" / "2 Clientes"
 const BarChartTooltip = ({ active, payload }: TooltipProps<number, string>) => {
@@ -68,6 +70,8 @@ const Dashboard = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [weeklyChartType, setWeeklyChartType] = useState<WeeklyChartType>('expiring');
+  const [createdDayFilter, setCreatedDayFilter] = useState<number | null>(null);
+  const schedulesSectionRef = useRef<HTMLDivElement>(null);
 
   const initialStats: DashboardStat[] = [
     { title: "Validade Próxima (Semana)", value: "0", description: "Carregando...", icon: AlertTriangle },
@@ -99,7 +103,6 @@ const Dashboard = () => {
         const allSchedules: Schedule[] = schedulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Schedule));
 
         const today = new Date();
-        const days = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
         const activeClients = new Set<string>();
         allSchedules.forEach(s => {
@@ -125,7 +128,7 @@ const Dashboard = () => {
 
         // Dados para "Validade Próxima"
         const expiringThisWeekUntreated = allSchedules.filter(s => !s.validadeTratada && s.endDate && isDateInCurrentWeek(s.endDate));
-        const expirationsPerDayOfWeek = days.map((dayName) => ({ name: dayName, count: 0 }));
+        const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0 }));
         expiringThisWeekUntreated.forEach(schedule => {
           const endDate = parseDate(schedule.endDate);
           if (endDate) {
@@ -150,7 +153,7 @@ const Dashboard = () => {
                  isWithinInterval(endDate, weekInterval);
         });
 
-        const broadcastsPerDayOfWeek = days.map((dayName) => ({ name: dayName, count: 0 }));
+        const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0 }));
         // Nova lógica: contar agendamentos que *começam* em cada dia da semana
         broadcastingThisWeek.forEach(schedule => {
           const startDate = parseDate(schedule.startDate);
@@ -167,7 +170,7 @@ const Dashboard = () => {
           return createdAtDate && isDateInCurrentWeek(createdAtDate);
         });
 
-        const newSchedulesPerDayOfWeek = days.map((dayName) => ({ name: dayName, count: 0 }));
+        const newSchedulesPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0 }));
         newSchedulesThisWeek.forEach(schedule => {
           const createdAtDate = schedule.createdAt instanceof Timestamp ? schedule.createdAt.toDate() : parseDate(schedule.createdAt as string);
           if (createdAtDate) {
@@ -215,6 +218,21 @@ const Dashboard = () => {
     setWeeklyChartType(prev => prev === 'expiring' ? 'broadcasting' : 'expiring');
   };
 
+  const handleCreatedDayClick = (dayName: string) => {
+    const dayIndex = DAYS_OF_WEEK.indexOf(dayName);
+    if (dayIndex === -1) return;
+
+    const isClearing = createdDayFilter === dayIndex;
+    setActiveTab("schedules");
+    setCreatedDayFilter(isClearing ? null : dayIndex);
+
+    if (!isClearing) {
+      window.setTimeout(() => {
+        schedulesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <header className="bg-card border-b border-border shadow-sm">
@@ -251,6 +269,7 @@ const Dashboard = () => {
           ) : (
             dashboardStats.map((stat) => {
               const isWeeklyCard = stat.title === "Validade Próxima (Semana)";
+              const isNewSchedulesCard = stat.title === "Novo(s) Agendamento(s) esta Semana";
               const displayExpiring = isWeeklyCard && weeklyChartType === 'expiring';
               const displayBroadcasting = isWeeklyCard && weeklyChartType === 'broadcasting';
 
@@ -282,11 +301,32 @@ const Dashboard = () => {
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
                             <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip />} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                              {cardBarData.map((entry, index) => (<Cell key={`cell-${index}`} fill={barColor} />))}
+                              {cardBarData.map((entry, index) => {
+                                const isSelectedDay = isNewSchedulesCard && createdDayFilter === index;
+                                return (
+                                  <Cell
+                                    key={`cell-${index}`}
+                                    fill={isSelectedDay ? '#15803d' : barColor}
+                                    fillOpacity={isNewSchedulesCard && createdDayFilter !== null && !isSelectedDay ? 0.45 : 1}
+                                    stroke={isSelectedDay ? '#14532d' : undefined}
+                                    strokeWidth={isSelectedDay ? 2 : undefined}
+                                    className={isNewSchedulesCard ? 'cursor-pointer' : undefined}
+                                    onClick={isNewSchedulesCard ? () => handleCreatedDayClick(entry.name) : undefined}
+                                  />
+                                );
+                              })}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
+                    )}
+
+                    {isNewSchedulesCard && stat.barChartData && (
+                      <p className="mt-3 text-center text-xs text-muted-foreground">
+                        {createdDayFilter !== null
+                          ? `Filtro ativo: ${DAYS_OF_WEEK[createdDayFilter]}. Clique novamente na barra para limpar.`
+                          : "Clique na barra de um dia para filtrar os agendamentos criados nele."}
+                      </p>
                     )}
 
                     {stat.title === "Veiculação Natalinas" && stat.chartData && (
@@ -347,8 +387,13 @@ const Dashboard = () => {
           <Button variant={activeTab === "clients" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("clients")} className="px-6"><Users className="w-4 h-4 mr-2" />Clientes</Button>
         </div>
 
-        <div className="bg-card rounded-lg shadow-sm border border-border/50">
-          {activeTab === "schedules" && <ScheduleList />}
+        <div ref={schedulesSectionRef} className="scroll-mt-6 bg-card rounded-lg shadow-sm border border-border/50">
+          {activeTab === "schedules" && (
+            <ScheduleList
+              createdDayFilter={createdDayFilter}
+              onClearCreatedDayFilter={() => setCreatedDayFilter(null)}
+            />
+          )}
           {activeTab === "clients" && <ClientList />}
         </div>
       </main>
