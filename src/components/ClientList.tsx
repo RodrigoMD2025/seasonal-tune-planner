@@ -166,82 +166,80 @@ export const ClientList = () => {
         </div>
       </div>
 
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredClients.map((client) => (
-          <Card key={client.id} className="shadow-sm border-border/50 hover:shadow-md transition-all">
+          <Card key={client.id} className="h-full shadow-sm border-border/50 hover:shadow-md transition-all">
             <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gradient-christmas rounded-lg flex items-center justify-center shadow-sm">
-                    <Users className="w-5 h-5 text-christmas-white" />
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-christmas shadow-sm">
+                    <Users className="h-5 w-5 text-christmas-white" />
                   </div>
-                  <div className="text-left">
-                    <div className="flex justify-between items-start gap-x-10">
-                      <div className="flex flex-col items-start">
-                        <h4 className="font-medium text-foreground">{client.name}</h4>
-                        <div className="flex items-center gap-3 mt-1">
-                          <div className="flex items-center gap-1">
-                            <Music className="w-3 h-3 text-muted-foreground" />
-                            <Badge className={getMusicStyleColor(client.musicStyle)}>
-                              {client.musicStyle}
-                            </Badge>
-                          </div>
-                          <div className={`text-xs ${client.activeSchedules > 0 ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
-                            {client.activeSchedules} agendamento{client.activeSchedules !== 1 ? 's' : ''} ativo{client.activeSchedules !== 1 ? 's' : ''}
-                          </div>
-                        </div>
+                  <div className="min-w-0 text-left">
+                    <h4 className="break-words font-medium text-foreground">{client.name}</h4>
+                    <div className="mt-1 flex flex-wrap items-center gap-2">
+                      <div className="flex items-center gap-1">
+                        <Music className="h-3 w-3 text-muted-foreground" />
+                        <Badge className={getMusicStyleColor(client.musicStyle)}>
+                          {client.musicStyle}
+                        </Badge>
                       </div>
-                      <div className="flex flex-col items-start gap-1">
-                        {client.phone && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Phone className="w-3 h-3" />
-                            <span>{client.phone}</span>
-                          </div>
-                        )}
-                        {client.contact && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <UserRound className="w-3 h-3" />
-                            <span>{client.contact}</span>
-                          </div>
-                        )}
-                        {client.email && (
-                          <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                            <Mail className="w-3 h-3" />
-                            <span>{client.email}</span>
-                          </div>
-                        )}
+                      <div className={`text-xs ${client.activeSchedules > 0 ? 'font-bold text-foreground' : 'text-muted-foreground'}`}>
+                        {client.activeSchedules} agendamento{client.activeSchedules !== 1 ? 's' : ''} ativo{client.activeSchedules !== 1 ? 's' : ''}
                       </div>
                     </div>
                   </div>
                 </div>
-                
-                <div className="flex items-center gap-4">
-                  <div className="text-left">
-                    <div className="text-sm text-muted-foreground">Última atualização</div>
-                    <div className="text-sm font-medium text-foreground">
-                      {formatDate(client.createdAt)}
+
+                <div className="flex shrink-0 gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleEditClient(client)}
+                    title="Editar cliente"
+                    aria-label={`Editar cliente ${client.name}`}
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => handleDeleteClient(client.id, client.name)}
+                    title="Excluir cliente"
+                    aria-label={`Excluir cliente ${client.name}`}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              <div className="mt-4 flex flex-wrap items-start justify-between gap-3 border-t border-border/30 pt-3">
+                <div className="min-w-0 space-y-1">
+                  {client.phone && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <Phone className="h-3 w-3 shrink-0" />
+                      <span className="break-words">{client.phone}</span>
                     </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleEditClient(client)}
-                      title="Editar cliente"
-                      aria-label={`Editar cliente ${client.name}`}
-                    >
-                      <Edit className="w-4 h-4" />
-                    </Button>
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-destructive hover:text-destructive"
-                      onClick={() => handleDeleteClient(client.id, client.name)}
-                      title="Excluir cliente"
-                      aria-label={`Excluir cliente ${client.name}`}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                  )}
+                  {client.contact && (
+                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                      <UserRound className="h-3 w-3 shrink-0" />
+                      <span className="break-words">{client.contact}</span>
+                    </div>
+                  )}
+                  {client.email && (
+                    <div className="flex min-w-0 items-center gap-1 text-sm text-muted-foreground">
+                      <Mail className="h-3 w-3 shrink-0" />
+                      <span className="break-all" title={client.email}>{client.email}</span>
+                    </div>
+                  )}
+                </div>
+
+                <div className="text-left sm:text-right">
+                  <div className="text-xs text-muted-foreground">Última atualização</div>
+                  <div className="text-sm font-medium text-foreground">
+                    {formatDate(client.createdAt)}
                   </div>
                 </div>
               </div>
