@@ -1,6 +1,6 @@
 # 🔐 Segurança do Firestore — Guia e status
 
-## Status atual (verificado em 20/10/2026)
+## Status atual (atualizado em 21/10/2026)
 
 - ✅ As regras de [`firestore.rules`](../firestore.rules) foram **publicadas** no projeto
   `seasonal-tune-planner`.
@@ -8,8 +8,8 @@
 - ✅ O **cadastro público de novas contas** foi **desativado** no Firebase Authentication
   (`client.permissions.disabledUserSignup = true`).
 - ✅ A base permanece com **147 clientes e 4 agendamentos**.
-- ⚠️ A chave de service account usada no deploy deve ser **revogada** no Google Cloud Console
-  assim que não for mais necessária. Ela não foi commitada; o `.gitignore` cobre
+- ✅ A chave de service account usada no deploy foi **revogada** em 20/10/2026
+  (confirmado pelo responsável). Ela nunca foi commitada; o `.gitignore` cobre
   `*firebase-adminsdk*.json`.
 
 > **Resultado:** o Firestore agora exige um usuário autenticado e não é mais acessível apenas
@@ -150,7 +150,8 @@ npx firebase-tools deploy --only firestore:rules --project seasonal-tune-planner
 > caminho usado no deploy de 20/10/2026.
 
 > 🔑 **Chave de service account:** nunca commite o JSON. O `.gitignore` já cobre
-> `*firebase-adminsdk*.json`. Revogue a chave no Google Cloud Console depois do uso.
+> `*firebase-adminsdk*.json`. A chave usada no deploy de 20/10/2026 foi revogada nessa
+> mesma data.
 
 O script `deploy:rules` executa `firebase deploy --only firestore:rules` com o
 `firestore.rules` deste repositório.
