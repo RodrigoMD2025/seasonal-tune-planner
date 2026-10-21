@@ -17,6 +17,7 @@ import {
   Mail,
   Music,
   ShieldCheck,
+  TreePine,
 } from 'lucide-react';
 
 const LOGIN_ERROR_MESSAGES: Record<string, string> = {
@@ -97,8 +98,8 @@ export const LoginPage = () => {
         <div className="absolute -right-24 top-20 h-72 w-72 rounded-full bg-white/5 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-24 -left-20 h-80 w-80 rounded-full bg-amber-300/10 blur-3xl" aria-hidden="true" />
         <div className="absolute right-1/3 top-1/2 h-40 w-40 rounded-full bg-white/10 blur-2xl" aria-hidden="true" />
-        <Music
-          className="absolute -bottom-20 -right-16 h-96 w-96 text-white/5"
+        <TreePine
+          className="absolute -right-8 bottom-0 h-80 w-80 text-white/5"
           strokeWidth={1}
           aria-hidden="true"
         />
