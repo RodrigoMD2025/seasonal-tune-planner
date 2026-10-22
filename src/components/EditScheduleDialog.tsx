@@ -54,7 +54,7 @@ export const EditScheduleDialog = ({ open, onOpenChange, scheduleToEdit, onSched
     }
   }, [scheduleToEdit]);
 
-  const handleChange = (field: keyof Schedule, value: any) => {
+  const handleChange = (field: keyof Schedule, value: Schedule[keyof Schedule]) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -114,7 +114,7 @@ export const EditScheduleDialog = ({ open, onOpenChange, scheduleToEdit, onSched
 
               <div>
                 <Label>Tipo de Playlist</Label>
-                <div className="flex gap-4 mt-2">
+                <div className="flex flex-wrap gap-4 mt-2">
                   <div className="flex items-center space-x-2">
                     <Checkbox id="edit-instrumental" checked={formData.playlistTypes?.includes('Instrumental')} onCheckedChange={() => togglePlaylistType('Instrumental')} />
                     <Label htmlFor="edit-instrumental">Instrumental</Label>
@@ -122,6 +122,10 @@ export const EditScheduleDialog = ({ open, onOpenChange, scheduleToEdit, onSched
                   <div className="flex items-center space-x-2">
                     <Checkbox id="edit-vocal" checked={formData.playlistTypes?.includes('Vocal')} onCheckedChange={() => togglePlaylistType('Vocal')} />
                     <Label htmlFor="edit-vocal">Vocal</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox id="edit-mix-animadas-full" checked={formData.playlistTypes?.includes('Mix Animadas Full')} onCheckedChange={() => togglePlaylistType('Mix Animadas Full')} />
+                    <Label htmlFor="edit-mix-animadas-full">Mix Animadas Full</Label>
                   </div>
                 </div>
               </div>

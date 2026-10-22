@@ -91,7 +91,7 @@ export const CreateScheduleDialog = ({ open, onOpenChange }: CreateScheduleDialo
 
   const addPeriod = () => setPeriods([...periods, { id: Date.now().toString(), startDate: "", endDate: "", playlistTypes: [], broadcast: "" }]);
   const removePeriod = (id: string) => setPeriods(periods.filter(p => p.id !== id));
-  const updatePeriod = (id: string, field: keyof Period, value: any) => setPeriods(periods.map(p => p.id === id ? { ...p, [field]: value } : p));
+  const updatePeriod = (id: string, field: keyof Period, value: Period[keyof Period]) => setPeriods(periods.map(p => p.id === id ? { ...p, [field]: value } : p));
   const togglePlaylistType = (periodId: string, type: string) => {
     const period = periods.find(p => p.id === periodId);
     if (!period) return;
@@ -206,9 +206,10 @@ export const CreateScheduleDialog = ({ open, onOpenChange }: CreateScheduleDialo
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Tipo de Playlist</Label>
-                      <div className="flex gap-4 mt-2">
+                      <div className="flex flex-wrap gap-4 mt-2">
                         <div className="flex items-center space-x-2"><Checkbox id={`c-instr-${period.id}`} checked={period.playlistTypes.includes('Instrumental')} onCheckedChange={() => togglePlaylistType(period.id, 'Instrumental')} /><Label htmlFor={`c-instr-${period.id}`} className="text-sm">Instrumental</Label></div>
                         <div className="flex items-center space-x-2"><Checkbox id={`c-vocal-${period.id}`} checked={period.playlistTypes.includes('Vocal')} onCheckedChange={() => togglePlaylistType(period.id, 'Vocal')} /><Label htmlFor={`c-vocal-${period.id}`} className="text-sm">Vocal</Label></div>
+                        <div className="flex items-center space-x-2"><Checkbox id={`c-mix-${period.id}`} checked={period.playlistTypes.includes('Mix Animadas Full')} onCheckedChange={() => togglePlaylistType(period.id, 'Mix Animadas Full')} /><Label htmlFor={`c-mix-${period.id}`} className="text-sm">Mix Animadas Full</Label></div>
                       </div>
                     </div>
                     <div>
