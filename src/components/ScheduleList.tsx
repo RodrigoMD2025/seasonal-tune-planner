@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { collection, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { EditScheduleDialog } from './EditScheduleDialog';
+import { ScheduleObservation } from './ScheduleObservation';
 import { parse, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 
 interface Schedule {
@@ -22,6 +23,7 @@ interface Schedule {
   period: string;
   status: "draft" | "scheduled" | "active" | "completed" | "cancelled";
   createdAt?: string | Timestamp;
+  observation?: string;
 }
 
 interface ScheduleListProps {
@@ -250,6 +252,11 @@ export const ScheduleList = ({ createdDayFilter = null, onClearCreatedDayFilter 
                       </div>
                     </div>
                   </div>
+                  {schedule.observation?.trim() && (
+                    <div className="mt-3 border-t border-border/40 pt-3">
+                      <ScheduleObservation observation={schedule.observation} />
+                    </div>
+                  )}
                 </div>
                 {createdDayFilter !== null && schedule.createdAt && (
                   <p className="mt-3 text-xs text-muted-foreground">

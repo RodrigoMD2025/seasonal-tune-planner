@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Plus, Trash2, Loader2 } from "lucide-react";
@@ -20,6 +21,7 @@ interface Period {
   endDate: string;
   playlistTypes: string[];
   broadcast: string;
+  observation: string;
 }
 
 interface Client {
@@ -89,7 +91,7 @@ export const CreateScheduleDialog = ({ open, onOpenChange }: CreateScheduleDialo
     fetchExistingSchedules();
   }, [selectedClient, clients]);
 
-  const addPeriod = () => setPeriods([...periods, { id: Date.now().toString(), startDate: "", endDate: "", playlistTypes: [], broadcast: "" }]);
+  const addPeriod = () => setPeriods([...periods, { id: Date.now().toString(), startDate: "", endDate: "", playlistTypes: [], broadcast: "", observation: "" }]);
   const removePeriod = (id: string) => setPeriods(periods.filter(p => p.id !== id));
   const updatePeriod = (id: string, field: keyof Period, value: Period[keyof Period]) => setPeriods(periods.map(p => p.id === id ? { ...p, [field]: value } : p));
   const togglePlaylistType = (periodId: string, type: string) => {
@@ -128,6 +130,7 @@ export const CreateScheduleDialog = ({ open, onOpenChange }: CreateScheduleDialo
         endDate: period.endDate,
         playlistTypes: period.playlistTypes,
         broadcast: period.broadcast,
+        observation: period.observation.trim(),
         period: `Período ${existingSchedules.length + index + 1}`,
         validadeTratada: false,
         status: "scheduled",
@@ -215,6 +218,19 @@ export const CreateScheduleDialog = ({ open, onOpenChange }: CreateScheduleDialo
                     <div>
                       <Label>Tipo de Veiculação</Label>
                       <Select value={period.broadcast} onValueChange={(value) => updatePeriod(period.id, 'broadcast', value)}><SelectTrigger><SelectValue placeholder="Selecione o tipo" /></SelectTrigger><SelectContent><SelectItem value="Mesclada">Mesclada</SelectItem><SelectItem value="100% Natal">100% Natal</SelectItem></SelectContent></Select>
+                    </div>
+                    <div>
+                      <Label htmlFor={`c-obs-${period.id}`}>
+                        Obs <span className="font-normal text-muted-foreground">(opcional)</span>
+                      </Label>
+                      <Textarea
+                        id={`c-obs-${period.id}`}
+                        value={period.observation}
+                        onChange={(e) => updatePeriod(period.id, 'observation', e.target.value)}
+                        placeholder="Descreva alguma particularidade na personalização da playlist natalina deste cliente."
+                        className="mt-2 resize-y"
+                        rows={3}
+                      />
                     </div>
                   </CardContent>
                 </Card>

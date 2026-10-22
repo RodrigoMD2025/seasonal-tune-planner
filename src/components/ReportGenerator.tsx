@@ -24,6 +24,7 @@ interface Schedule {
   period: string;
   status: "draft" | "scheduled" | "active" | "completed" | "cancelled";
   createdAt?: Timestamp | string | Date;
+  observation?: string;
 }
 
 interface ReportOptions {
@@ -152,13 +153,17 @@ export const ReportGenerator = () => {
         case 'client':
           return a.clientName.localeCompare(b.clientName);
         case 'startDate':
-          const dateA = parseDate(a.startDate)?.getTime() || 0;
-          const dateB = parseDate(b.startDate)?.getTime() || 0;
-          return dateB - dateA;
+          {
+            const dateA = parseDate(a.startDate)?.getTime() || 0;
+            const dateB = parseDate(b.startDate)?.getTime() || 0;
+            return dateB - dateA;
+          }
         case 'status':
-          const statusA = getDynamicStatus(a);
-          const statusB = getDynamicStatus(b);
-          return statusA.localeCompare(statusB);
+          {
+            const statusA = getDynamicStatus(a);
+            const statusB = getDynamicStatus(b);
+            return statusA.localeCompare(statusB);
+          }
         default:
           return 0;
       }
@@ -183,6 +188,7 @@ export const ReportGenerator = () => {
         'Status': getStatusText(getDynamicStatus(schedule)),
         'Transmissão': schedule.broadcast,
         'Tipos de Playlist': schedule.playlistTypes.join(', '),
+        'Observação': schedule.observation?.trim() || '',
         'Criado em': schedule.createdAt ? formatDate(schedule.createdAt) : 'N/A'
       }));
 
@@ -205,6 +211,7 @@ export const ReportGenerator = () => {
           { wch: 15 },  // Status
           { wch: 15 },  // Transmissão
           { wch: 30 },  // Tipos de Playlist
+          { wch: 40 },  // Observação
           { wch: 15 }   // Criado em
         ];
         ws['!cols'] = colWidths;

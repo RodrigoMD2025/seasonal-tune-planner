@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Calendar, Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ interface Schedule {
   broadcast: string;
   period: string;
   status: string;
+  observation?: string;
 }
 
 interface EditScheduleDialogProps {
@@ -75,6 +77,7 @@ export const EditScheduleDialog = ({ open, onOpenChange, scheduleToEdit, onSched
       const scheduleRef = doc(db, "schedules", scheduleToEdit.id);
       await updateDoc(scheduleRef, {
         ...formData,
+        observation: (formData.observation || '').trim(),
         updatedAt: new Date(),
       });
 
@@ -91,7 +94,7 @@ export const EditScheduleDialog = ({ open, onOpenChange, scheduleToEdit, onSched
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Editar Agendamento</DialogTitle>
           <DialogDescription>Modifique os detalhes deste período de agendamento.</DialogDescription>
@@ -139,6 +142,20 @@ export const EditScheduleDialog = ({ open, onOpenChange, scheduleToEdit, onSched
                     <SelectItem value="100% Natal">100% Natal</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <div>
+                <Label htmlFor="edit-observation">
+                  Obs <span className="font-normal text-muted-foreground">(opcional)</span>
+                </Label>
+                <Textarea
+                  id="edit-observation"
+                  value={formData.observation || ''}
+                  onChange={(e) => handleChange('observation', e.target.value)}
+                  placeholder="Descreva alguma particularidade na personalização da playlist natalina deste cliente."
+                  className="mt-2 resize-y"
+                  rows={3}
+                />
               </div>
             </CardContent>
           </Card>

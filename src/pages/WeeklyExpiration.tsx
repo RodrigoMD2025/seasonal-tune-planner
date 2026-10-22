@@ -12,6 +12,7 @@ import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 import { Input } from '@/components/ui/input'; // Adicionado: Import do componente Input
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { ScheduleObservation } from '@/components/ScheduleObservation';
 
 interface Schedule {
   id: string;
@@ -25,6 +26,7 @@ interface Schedule {
   validadeTratada?: boolean;
   veiculacaoTratada?: boolean;
   status?: "draft" | "scheduled" | "active" | "completed" | "cancelled";
+  observation?: string;
 }
 
 const WeeklyExpirationPage = () => {
@@ -343,11 +345,15 @@ const WeeklyExpirationPage = () => {
                                     <Badge variant="outline" className="text-xs">{schedule.musicStyle}</Badge>
                                   )}
                                   {schedule.broadcast && (
-                                    <Badge variant="outline" className a="text-xs">{schedule.broadcast}</Badge>
+                                    <Badge variant="outline" className="text-xs">{schedule.broadcast}</Badge>
                                   )}
                                   {schedule.playlistTypes && (
                                     <Badge variant="outline" className="text-xs">{schedule.playlistTypes.join(', ')}</Badge>
                                   )}
+                                  <ScheduleObservation
+                                    observation={schedule.observation}
+                                    className="h-6 px-2 text-[11px]"
+                                  />
                                 </div>
                               </TableCell>
                             </>
@@ -370,6 +376,10 @@ const WeeklyExpirationPage = () => {
                                   {schedule.playlistTypes && (
                                     <Badge variant="outline" className="text-xs">{schedule.playlistTypes.join(', ')}</Badge>
                                   )}
+                                  <ScheduleObservation
+                                    observation={schedule.observation}
+                                    className="h-6 px-2 text-[11px]"
+                                  />
                                 </div>
                               </TableCell>
                             </>
