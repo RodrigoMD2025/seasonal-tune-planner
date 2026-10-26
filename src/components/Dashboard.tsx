@@ -21,11 +21,18 @@ import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
 interface Schedule {
   id: string;
   client: string;
+  clientName?: string;
   startDate: Timestamp | string;
   endDate: Timestamp | string;
   period: string;
   validadeTratada?: boolean;
   createdAt?: Timestamp | string;
+}
+
+interface BarChartDataPoint {
+  name: string;
+  count: number;
+  clients?: string[];
 }
 
 interface DashboardStat {
@@ -34,12 +41,12 @@ interface DashboardStat {
   description: string;
   icon: React.ElementType;
   chartData?: { name: string; value: number; }[];
-  barChartData?: { name: string; count: number; }[];
+  barChartData?: BarChartDataPoint[];
   // Novas propriedades para a alternância de gráficos
   altTitle?: string;
   altValue?: string;
   altDescription?: string;
-  altBarChartData?: { name: string; count: number; }[];
+  altBarChartData?: BarChartDataPoint[];
   altIcon?: React.ElementType;
 }
 
@@ -49,15 +56,31 @@ const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
 const DAYS_OF_WEEK = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
-// Tooltip dos gráficos de barra: mostra apenas "1 Cliente" / "2 Clientes"
-const BarChartTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+// Tooltip dos gráficos de barra: mostra a quantidade e, quando disponível, os clientes do dia.
+const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (!active || !payload || payload.length === 0) return null;
 
-  const count = Number(payload[0]?.value ?? 0);
+  const data = payload[0]?.payload as BarChartDataPoint | undefined;
+  const count = Number(data?.count ?? payload[0]?.value ?? 0);
+  const clients = data?.clients ?? [];
+  const dayLabel = typeof label === 'string' ? label : null;
 
   return (
-    <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
-      {count} {count === 1 ? 'Cliente' : 'Clientes'}
+    <div className="min-w-[160px] max-w-[240px] rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
+      <div className="border-b border-border/60 pb-1.5 font-medium text-foreground">
+        {dayLabel && <span>{dayLabel} • </span>}
+        {count} {count === 1 ? 'Cliente' : 'Clientes'}
+      </div>
+      {clients.length > 0 && (
+        <ul className="mt-1.5 space-y-1">
+          {clients.map((client, index) => (
+            <li key={`${client}-${index}`} className="flex items-start gap-1.5 text-xs">
+              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
+              <span className="min-w-0 break-words">{client}</span>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 };
@@ -98,6 +121,14 @@ const Dashboard = () => {
         setStatsLoading(true);
         const clientsSnapshot = await getDocs(collection(db, "clients"));
         const clientsCount = clientsSnapshot.size;
+        const clientNamesById = new Map(
+          clientsSnapshot.docs.map(clientDoc => [
+            clientDoc.id,
+            String(clientDoc.data().name || '').trim(),
+          ]),
+        );
+        const getClientName = (schedule: Schedule) =>
+          schedule.clientName?.trim() || clientNamesById.get(schedule.client) || 'Cliente sem nome';
 
         const schedulesSnapshot = await getDocs(collection(db, "schedules"));
         const allSchedules: Schedule[] = schedulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Schedule));
@@ -128,12 +159,13 @@ const Dashboard = () => {
 
         // Dados para "Validade Próxima"
         const expiringThisWeekUntreated = allSchedules.filter(s => !s.validadeTratada && s.endDate && isDateInCurrentWeek(s.endDate));
-        const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0 }));
+        const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
         expiringThisWeekUntreated.forEach(schedule => {
           const endDate = parseDate(schedule.endDate);
           if (endDate) {
             const dayIndex = endDate.getDay();
             expirationsPerDayOfWeek[dayIndex].count++;
+            expirationsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
           }
         });
 
@@ -153,13 +185,14 @@ const Dashboard = () => {
                  isWithinInterval(endDate, weekInterval);
         });
 
-        const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0 }));
+        const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
         // Nova lógica: contar agendamentos que *começam* em cada dia da semana
         broadcastingThisWeek.forEach(schedule => {
           const startDate = parseDate(schedule.startDate);
           if (startDate && isDateInCurrentWeek(startDate)) { // Verifica se a startDate está na semana atual
             const dayIndex = startDate.getDay();
             broadcastsPerDayOfWeek[dayIndex].count++;
+            broadcastsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
           }
         });
 
