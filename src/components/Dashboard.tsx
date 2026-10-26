@@ -203,12 +203,13 @@ const Dashboard = () => {
           return createdAtDate && isDateInCurrentWeek(createdAtDate);
         });
 
-        const newSchedulesPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0 }));
+        const newSchedulesPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
         newSchedulesThisWeek.forEach(schedule => {
           const createdAtDate = schedule.createdAt instanceof Timestamp ? schedule.createdAt.toDate() : parseDate(schedule.createdAt as string);
           if (createdAtDate) {
             const dayIndex = createdAtDate.getDay();
             newSchedulesPerDayOfWeek[dayIndex].count++;
+            newSchedulesPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
           }
         });
 
