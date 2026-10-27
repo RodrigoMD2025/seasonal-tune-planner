@@ -226,7 +226,7 @@ const Dashboard = () => {
                   const startDate = parseDate(s.startDate);
                   return startDate && isDateInCurrentWeek(startDate);
                 }).length.toString(),
-                altDescription: `Novos agendamentos que iniciam a veiculação esta semana (${weekRange})`, // Descrição atualizada
+                altDescription: `Com início nesta semana (${weekRange})`,
                 altBarChartData: broadcastsPerDayOfWeek,
                 altIcon: PlayCircle,
               };
