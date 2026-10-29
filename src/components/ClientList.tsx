@@ -166,7 +166,7 @@ export const ClientList = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {filteredClients.map((client) => (
           <Card key={client.id} className="h-full shadow-sm border-border/50 hover:shadow-md transition-all">
             <CardContent className="p-4">
