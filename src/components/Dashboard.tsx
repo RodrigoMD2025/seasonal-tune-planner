@@ -1,10 +1,10 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings } from "lucide-react";
+import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CreateScheduleDialog } from "./CreateScheduleDialog";
 import { ImportClientsDialog } from "./ImportClientsDialog";
 import { ReportGenerator } from "./ReportGenerator";
@@ -16,7 +16,7 @@ import { collection, getDocs, Timestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, type TooltipProps } from 'recharts';
 import { getStartOfWeek, getEndOfWeek, isDateInCurrentWeek, formatDate } from '@/lib/date-utils';
-import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
+import { parse, isWithinInterval, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 
 interface Schedule {
   id: string;
@@ -56,6 +56,16 @@ const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
 const DAYS_OF_WEEK = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 
+const parseDate = (date: string | Timestamp): Date | null => {
+  if (date instanceof Timestamp) return date.toDate();
+  if (typeof date === 'string') {
+    let parsedDate = parse(date, 'yyyy-MM-dd', new Date());
+    if (isNaN(parsedDate.getTime())) { parsedDate = parse(date, 'dd/MM/yyyy', new Date()); }
+    return isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+  return null;
+};
+
 // Tooltip dos gráficos de barra: mostra a quantidade e, quando disponível, os clientes do dia.
 const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
   if (!active || !payload || payload.length === 0) return null;
@@ -94,6 +104,9 @@ const Dashboard = () => {
   const [statsError, setStatsError] = useState<string | null>(null);
   const [weeklyChartType, setWeeklyChartType] = useState<WeeklyChartType>('expiring');
   const [createdDayFilter, setCreatedDayFilter] = useState<number | null>(null);
+  const [weekReferenceDate, setWeekReferenceDate] = useState(() => new Date());
+  const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
+  const [clientNamesById, setClientNamesById] = useState<Map<string, string>>(() => new Map());
   const schedulesSectionRef = useRef<HTMLDivElement>(null);
 
   const initialStats: DashboardStat[] = [
@@ -105,33 +118,25 @@ const Dashboard = () => {
 
   const [dashboardStats, setDashboardStats] = useState<DashboardStat[]>(initialStats);
 
-  const parseDate = (date: string | Timestamp): Date | null => {
-    if (date instanceof Timestamp) return date.toDate();
-    if (typeof date === 'string') {
-      let parsedDate = parse(date, 'yyyy-MM-dd', new Date());
-      if (isNaN(parsedDate.getTime())) { parsedDate = parse(date, 'dd/MM/yyyy', new Date()); }
-      return isNaN(parsedDate.getTime()) ? null : parsedDate;
-    }
-    return null;
-  };
-
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
         setStatsLoading(true);
         const clientsSnapshot = await getDocs(collection(db, "clients"));
         const clientsCount = clientsSnapshot.size;
-        const clientNamesById = new Map(
+        const clientNameMap = new Map(
           clientsSnapshot.docs.map(clientDoc => [
             clientDoc.id,
             String(clientDoc.data().name || '').trim(),
           ]),
         );
         const getClientName = (schedule: Schedule) =>
-          schedule.clientName?.trim() || clientNamesById.get(schedule.client) || 'Cliente sem nome';
+          schedule.clientName?.trim() || clientNameMap.get(schedule.client) || 'Cliente sem nome';
 
         const schedulesSnapshot = await getDocs(collection(db, "schedules"));
         const allSchedules: Schedule[] = schedulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Schedule));
+        setAllSchedules(allSchedules);
+        setClientNamesById(clientNameMap);
 
         const today = new Date();
 
@@ -157,45 +162,6 @@ const Dashboard = () => {
         const endOfWeekDate = getEndOfWeek(today);
         const weekRange = `${formatDate(startOfWeekDate, 'dd/MM')} - ${formatDate(endOfWeekDate, 'dd/MM')}`;
 
-        // Dados para "Validade Próxima"
-        const expiringThisWeekUntreated = allSchedules.filter(s => !s.validadeTratada && s.endDate && isDateInCurrentWeek(s.endDate));
-        const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
-        expiringThisWeekUntreated.forEach(schedule => {
-          const endDate = parseDate(schedule.endDate);
-          if (endDate) {
-            const dayIndex = endDate.getDay();
-            expirationsPerDayOfWeek[dayIndex].count++;
-            expirationsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
-          }
-        });
-
-        // Dados para "Veiculações da Semana"
-        const broadcastingThisWeek = allSchedules.filter(s => {
-          const startDate = parseDate(s.startDate);
-          const endDate = parseDate(s.endDate);
-          
-          if (!startDate || !endDate) return false;
-          
-          const weekInterval = { start: startOfWeekDate, end: endOfWeekDate };
-          const scheduleInterval = { start: startDate, end: endOfDay(endDate) };
-          
-          return isWithinInterval(startOfWeekDate, scheduleInterval) || 
-                 isWithinInterval(endOfWeekDate, scheduleInterval) ||
-                 isWithinInterval(startDate, weekInterval) ||
-                 isWithinInterval(endDate, weekInterval);
-        });
-
-        const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
-        // Nova lógica: contar agendamentos que *começam* em cada dia da semana
-        broadcastingThisWeek.forEach(schedule => {
-          const startDate = parseDate(schedule.startDate);
-          if (startDate && isDateInCurrentWeek(startDate)) { // Verifica se a startDate está na semana atual
-            const dayIndex = startDate.getDay();
-            broadcastsPerDayOfWeek[dayIndex].count++;
-            broadcastsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
-          }
-        });
-
         // Dados para "Novo(s) Agendamento(s) esta Semana"
         const newSchedulesThisWeek = allSchedules.filter(s => {
           if (!s.createdAt) return false;
@@ -215,21 +181,6 @@ const Dashboard = () => {
 
         setDashboardStats(prevStats => prevStats.map(stat => {
           switch (stat.title) {
-            case "Validade Próxima (Semana)":
-              return {
-                ...stat,
-                value: expiringThisWeekUntreated.length.toString(),
-                description: `Clientes pendentes para ${weekRange}`,
-                barChartData: expirationsPerDayOfWeek,
-                altTitle: "Novos Agendamentos em Veiculação (Semana)", // Título atualizado
-                altValue: broadcastingThisWeek.filter(s => {
-                  const startDate = parseDate(s.startDate);
-                  return startDate && isDateInCurrentWeek(startDate);
-                }).length.toString(),
-                altDescription: `Com início nesta semana (${weekRange})`,
-                altBarChartData: broadcastsPerDayOfWeek,
-                altIcon: PlayCircle,
-              };
             case "Clientes Agendados":
               return { ...stat, value: scheduledClientsCount.toString(), description: `De ${clientsCount} clientes totais`, chartData: [{ name: 'Agendados', value: scheduledClientsCount }, { name: 'Não Agendados', value: clientsCount - scheduledClientsCount }] };
             case "Novo(s) Agendamento(s) esta Semana":
@@ -247,6 +198,86 @@ const Dashboard = () => {
 
     fetchDashboardStats();
   }, []);
+
+  const selectedWeek = useMemo(() => {
+    const start = getStartOfWeek(weekReferenceDate);
+    const end = getEndOfWeek(weekReferenceDate);
+    return {
+      start,
+      end,
+      range: `${formatDate(start, 'dd/MM')} - ${formatDate(end, 'dd/MM')}`,
+    };
+  }, [weekReferenceDate]);
+
+  const weeklyCardStat = useMemo<DashboardStat>(() => {
+    const { start, end } = selectedWeek;
+    const getClientName = (schedule: Schedule) =>
+      schedule.clientName?.trim() || clientNamesById.get(schedule.client) || 'Cliente sem nome';
+
+    const expiringSchedules = allSchedules.filter(schedule => {
+      if (schedule.validadeTratada || !schedule.endDate) return false;
+      const endDate = parseDate(schedule.endDate);
+      return endDate ? isWithinInterval(endDate, { start, end }) : false;
+    });
+
+    const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
+    expiringSchedules.forEach(schedule => {
+      const endDate = parseDate(schedule.endDate);
+      if (endDate) {
+        const dayIndex = endDate.getDay();
+        expirationsPerDayOfWeek[dayIndex].count++;
+        expirationsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
+      }
+    });
+
+    const broadcastingInWeek = allSchedules.filter(schedule => {
+      const startDate = parseDate(schedule.startDate);
+      const endDate = parseDate(schedule.endDate);
+
+      if (!startDate || !endDate) return false;
+
+      const weekInterval = { start, end };
+      const scheduleInterval = { start: startDate, end: endOfDay(endDate) };
+
+      return isWithinInterval(start, scheduleInterval) ||
+             isWithinInterval(end, scheduleInterval) ||
+             isWithinInterval(startDate, weekInterval) ||
+             isWithinInterval(endDate, weekInterval);
+    });
+
+    const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
+    broadcastingInWeek.forEach(schedule => {
+      const startDate = parseDate(schedule.startDate);
+      if (startDate && isWithinInterval(startDate, { start, end })) {
+        const dayIndex = startDate.getDay();
+        broadcastsPerDayOfWeek[dayIndex].count++;
+        broadcastsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
+      }
+    });
+
+    const newBroadcastsCount = broadcastsPerDayOfWeek.reduce((total, day) => total + day.count, 0);
+
+    return {
+      title: "Validade Próxima (Semana)",
+      value: expiringSchedules.length.toString(),
+      description: "Clientes pendentes",
+      icon: AlertTriangle,
+      barChartData: expirationsPerDayOfWeek,
+      altTitle: "Novos Agendamentos em Veiculação (Semana)",
+      altValue: newBroadcastsCount.toString(),
+      altDescription: "Com início na semana",
+      altBarChartData: broadcastsPerDayOfWeek,
+      altIcon: PlayCircle,
+    };
+  }, [allSchedules, clientNamesById, selectedWeek]);
+
+  const handlePreviousWeek = () => {
+    setWeekReferenceDate(prev => addDays(prev, -7));
+  };
+
+  const handleNextWeek = () => {
+    setWeekReferenceDate(prev => addDays(prev, 7));
+  };
 
   const toggleWeeklyChart = () => {
     setWeeklyChartType(prev => prev === 'expiring' ? 'broadcasting' : 'expiring');
@@ -302,16 +333,17 @@ const Dashboard = () => {
             <div className="col-span-full text-center py-4 text-destructive"><p>{statsError}</p></div>
           ) : (
             dashboardStats.map((stat) => {
-              const isWeeklyCard = stat.title === "Validade Próxima (Semana)";
-              const isNewSchedulesCard = stat.title === "Novo(s) Agendamento(s) esta Semana";
+              const displayStat = stat.title === "Validade Próxima (Semana)" ? weeklyCardStat : stat;
+              const isWeeklyCard = displayStat.title === "Validade Próxima (Semana)";
+              const isNewSchedulesCard = displayStat.title === "Novo(s) Agendamento(s) esta Semana";
               const displayExpiring = isWeeklyCard && weeklyChartType === 'expiring';
               const displayBroadcasting = isWeeklyCard && weeklyChartType === 'broadcasting';
 
-              const cardTitle = displayBroadcasting ? stat.altTitle : stat.title;
-              const cardValue = displayBroadcasting ? stat.altValue : stat.value;
-              const cardDescription = displayBroadcasting ? stat.altDescription : stat.description;
-              const cardBarData = displayBroadcasting ? stat.altBarChartData : stat.barChartData;
-              const cardIcon = displayBroadcasting ? stat.altIcon : stat.icon;
+              const cardTitle = displayBroadcasting ? displayStat.altTitle : displayStat.title;
+              const cardValue = displayBroadcasting ? displayStat.altValue : displayStat.value;
+              const cardDescription = displayBroadcasting ? displayStat.altDescription : displayStat.description;
+              const cardBarData = displayBroadcasting ? displayStat.altBarChartData : displayStat.barChartData;
+              const cardIcon = displayBroadcasting ? displayStat.altIcon : displayStat.icon;
               const barColor = displayExpiring ? '#ef4444' : '#22c55e'; // Vermelho para validade, Verde para veiculação
 
               return (
@@ -325,8 +357,38 @@ const Dashboard = () => {
                       <div className="text-2xl font-bold text-foreground">{cardValue}</div>
                       <p className="text-xs text-muted-foreground mt-1">{cardDescription}</p>
                     </div>
+
+                    {isWeeklyCard && (
+                      <div className="mt-3 flex items-center justify-between gap-1">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={handlePreviousWeek}
+                          title="Semana anterior"
+                          aria-label="Ver semana anterior"
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <span className="min-w-0 text-center text-xs font-medium text-foreground" aria-live="polite">
+                          {selectedWeek.range}
+                        </span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
+                          onClick={handleNextWeek}
+                          title="Próxima semana"
+                          aria-label="Ver próxima semana"
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
                     
-                    {stat.barChartData && (
+                    {displayStat.barChartData && (
                       <div className="h-[100px] w-full mt-4">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={cardBarData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
@@ -355,7 +417,7 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    {isNewSchedulesCard && stat.barChartData && (
+                    {isNewSchedulesCard && displayStat.barChartData && (
                       <p className="mt-3 text-center text-xs text-muted-foreground">
                         {createdDayFilter !== null
                           ? `Filtro ativo: ${DAYS_OF_WEEK[createdDayFilter]}. Clique novamente na barra para limpar.`
@@ -363,12 +425,12 @@ const Dashboard = () => {
                       </p>
                     )}
 
-                    {stat.title === "Veiculação Natalinas" && stat.chartData && (
+                    {displayStat.title === "Veiculação Natalinas" && displayStat.chartData && (
                       <div className="h-[120px] w-full mt-2">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
-                              {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_VEICULACAO[index % PIE_COLORS_VEICULACAO.length]} />))}
+                            <Pie data={displayStat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
+                              {displayStat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_VEICULACAO[index % PIE_COLORS_VEICULACAO.length]} />))}
                             </Pie>
                             <Tooltip formatter={(value) => `${value} ${Number(value) === 1 ? 'cliente' : 'clientes'}`} />
                           </PieChart>
@@ -380,12 +442,12 @@ const Dashboard = () => {
                       </div>
                     )}
 
-                    {stat.title === "Clientes Agendados" && stat.chartData && (
+                    {displayStat.title === "Clientes Agendados" && displayStat.chartData && (
                       <div className="h-[120px] w-full mt-2">
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={stat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
-                              {stat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_AGENDADOS[index % PIE_COLORS_AGENDADOS.length]} />))}
+                            <Pie data={displayStat.chartData} cx="50%" cy="50%" innerRadius={38} outerRadius={58} fill="#8884d8" paddingAngle={5} dataKey="value">
+                              {displayStat.chartData.map((entry, index) => (<Cell key={`cell-${index}`} fill={PIE_COLORS_AGENDADOS[index % PIE_COLORS_AGENDADOS.length]} />))}
                             </Pie>
                             <Tooltip formatter={(value) => `${value} ${Number(value) === 1 ? 'cliente' : 'clientes'}`} />
                           </PieChart>
