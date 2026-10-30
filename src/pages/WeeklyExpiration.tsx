@@ -75,17 +75,7 @@ const WeeklyExpirationPage = () => {
 
   const broadcastSchedules = useMemo(() => allSchedules.filter(schedule => {
     const startDate = parseDate(schedule.startDate);
-    const endDate = parseDate(schedule.endDate);
-
-    if (!startDate || !endDate) return false;
-
-    const weekInterval = { start: selectedWeek.start, end: selectedWeek.end };
-    const scheduleInterval = { start: startDate, end: endOfDay(endDate) };
-
-    return isWithinInterval(selectedWeek.start, scheduleInterval) ||
-           isWithinInterval(selectedWeek.end, scheduleInterval) ||
-           isWithinInterval(startDate, weekInterval) ||
-           isWithinInterval(endDate, weekInterval);
+    return startDate ? isWithinInterval(startDate, { start: selectedWeek.start, end: selectedWeek.end }) : false;
   }), [allSchedules, selectedWeek]);
 
   const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
@@ -334,8 +324,8 @@ const WeeklyExpirationPage = () => {
             </CardTitle>
             <CardDescription>
               {activeTab === 'expiring' 
-                ? 'Lista de clientes com playlists expirando na semana selecionada.'
-                : 'Lista de clientes com veiculações ativas ou programadas para a semana selecionada.'}
+                ? 'Lista de clientes com playlists vencendo na semana selecionada.'
+                : 'Lista de clientes que iniciarão a veiculação na semana selecionada.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -462,8 +452,8 @@ const WeeklyExpirationPage = () => {
                         className="text-center h-24 text-muted-foreground"
                       >
                         {activeTab === 'expiring' 
-                          ? 'Nenhum agendamento expirando na semana selecionada.'
-                          : 'Nenhuma veiculação programada para a semana selecionada.'}
+                          ? 'Nenhum agendamento vencendo na semana selecionada.'
+                          : 'Nenhum novo agendamento inicia a veiculação na semana selecionada.'}
                       </TableCell>
                     </TableRow>
                   )}
