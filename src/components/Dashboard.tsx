@@ -465,7 +465,7 @@ const Dashboard = () => {
                         <RefreshCw className="w-3 h-3 mr-1" />
                         {weeklyChartType === 'expiring' ? 'Ver Veiculações' : 'Ver Validades'}
                       </Button>
-                      <Link to="/validade-semanal" className="flex-grow">
+                      <Link to={`/validade-semanal?week=${formatDate(selectedWeek.start, 'yyyy-MM-dd')}`} className="flex-grow">
                         <Button variant="outline" size="sm" className="w-full !px-2 !text-xs !gap-1">
                           Ver Detalhes <ArrowRight className="w-3 h-3 ml-1" />
                         </Button>

@@ -1,14 +1,14 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { collection, getDocs, doc, updateDoc, Timestamp } from 'firebase/firestore';
 import { db } from '@/config/firebase';
-import { isDateInCurrentWeek, formatDate, getStartOfWeek, getEndOfWeek } from '@/lib/date-utils';
+import { formatDate, getStartOfWeek, getEndOfWeek } from '@/lib/date-utils';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle, ArrowLeft, Undo2, Calendar, PlayCircle, AlertTriangle } from 'lucide-react';
+import { Loader2, CheckCircle, ArrowLeft, Undo2, PlayCircle, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from '@/components/ui/badge';
-import { Link } from 'react-router-dom';
-import { parse, isWithinInterval, endOfDay, isBefore, isAfter } from 'date-fns';
+import { Link, useSearchParams } from 'react-router-dom';
+import { parse, isWithinInterval, endOfDay, isBefore, isAfter, addDays } from 'date-fns';
 import { Input } from '@/components/ui/input'; // Adicionado: Import do componente Input
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
 import { ThemeToggle } from '@/components/ThemeToggle';
@@ -29,24 +29,64 @@ interface Schedule {
   observation?: string;
 }
 
+const parseDate = (date: string | Timestamp): Date | null => {
+  if (date instanceof Timestamp) return date.toDate();
+  if (typeof date === 'string') {
+    let parsedDate = parse(date, 'yyyy-MM-dd', new Date());
+    if (isNaN(parsedDate.getTime())) { parsedDate = parse(date, 'dd/MM/yyyy', new Date()); }
+    return isNaN(parsedDate.getTime()) ? null : parsedDate;
+  }
+  return null;
+};
+
 const WeeklyExpirationPage = () => {
-  const [expiringSchedules, setExpiringSchedules] = useState<Schedule[]>([]);
-  const [broadcastSchedules, setBroadcastSchedules] = useState<Schedule[]>([]);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [activeTab, setActiveTab] = useState<'expiring' | 'broadcasting'>('expiring');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState(''); // Adicionado: Estado para o termo de busca
   const [actionFilter, setActionFilter] = useState<'all' | 'marcar_ok' | 'desmarcar'>('all'); // Novo estado para o filtro de ação
 
-  const parseDate = (date: string | Timestamp): Date | null => {
-    if (date instanceof Timestamp) return date.toDate();
-    if (typeof date === 'string') {
-      let parsedDate = parse(date, 'yyyy-MM-dd', new Date());
-      if (isNaN(parsedDate.getTime())) { parsedDate = parse(date, 'dd/MM/yyyy', new Date()); }
-      return isNaN(parsedDate.getTime()) ? null : parsedDate;
+  const weekParam = searchParams.get('week');
+  const weekReferenceDate = useMemo(() => {
+    if (weekParam) {
+      const parsed = parse(weekParam, 'yyyy-MM-dd', new Date());
+      if (!isNaN(parsed.getTime())) return parsed;
     }
-    return null;
-  };
+    return new Date();
+  }, [weekParam]);
+
+  const selectedWeek = useMemo(() => {
+    const start = getStartOfWeek(weekReferenceDate);
+    const end = getEndOfWeek(weekReferenceDate);
+    return {
+      start,
+      end,
+      range: `${formatDate(start, 'dd/MM')} - ${formatDate(end, 'dd/MM')}`,
+    };
+  }, [weekReferenceDate]);
+
+  const expiringSchedules = useMemo(() => allSchedules.filter(schedule => {
+    if (!schedule.endDate) return false;
+    const endDate = parseDate(schedule.endDate);
+    return endDate ? isWithinInterval(endDate, { start: selectedWeek.start, end: selectedWeek.end }) : false;
+  }), [allSchedules, selectedWeek]);
+
+  const broadcastSchedules = useMemo(() => allSchedules.filter(schedule => {
+    const startDate = parseDate(schedule.startDate);
+    const endDate = parseDate(schedule.endDate);
+
+    if (!startDate || !endDate) return false;
+
+    const weekInterval = { start: selectedWeek.start, end: selectedWeek.end };
+    const scheduleInterval = { start: startDate, end: endOfDay(endDate) };
+
+    return isWithinInterval(selectedWeek.start, scheduleInterval) ||
+           isWithinInterval(selectedWeek.end, scheduleInterval) ||
+           isWithinInterval(startDate, weekInterval) ||
+           isWithinInterval(endDate, weekInterval);
+  }), [allSchedules, selectedWeek]);
 
   const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
     const today = new Date();
@@ -75,38 +115,7 @@ const WeeklyExpirationPage = () => {
       setLoading(true);
       try {
         const schedulesSnapshot = await getDocs(collection(db, 'schedules'));
-        const allSchedules: Schedule[] = schedulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Schedule));
-
-        // Filtrar agendamentos que expiram esta semana
-        const expiringThisWeek = allSchedules.filter(s => {
-          if (!s.endDate) return false;
-          const dateToCheck = s.endDate instanceof Timestamp ? s.endDate.toDate() : s.endDate;
-          return isDateInCurrentWeek(dateToCheck);
-        });
-
-        // Filtrar agendamentos que estão em veiculação esta semana
-        const today = new Date();
-        const startOfWeek = getStartOfWeek(today);
-        const endOfWeek = getEndOfWeek(today);
-        
-        const broadcastingThisWeek = allSchedules.filter(s => {
-          const startDate = parseDate(s.startDate);
-          const endDate = parseDate(s.endDate);
-          
-          if (!startDate || !endDate) return false;
-          
-          // Verifica se o período de veiculação tem interseção com a semana atual
-          const weekInterval = { start: startOfWeek, end: endOfWeek };
-          const scheduleInterval = { start: startDate, end: endOfDay(endDate) };
-          
-          return isWithinInterval(startOfWeek, scheduleInterval) || 
-                 isWithinInterval(endOfWeek, scheduleInterval) ||
-                 isWithinInterval(startDate, weekInterval) ||
-                 isWithinInterval(endDate, weekInterval);
-        });
-
-        setExpiringSchedules(expiringThisWeek);
-        setBroadcastSchedules(broadcastingThisWeek);
+        setAllSchedules(schedulesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Schedule)));
       } catch (err) {
         console.error("Erro ao buscar agendamentos:", err);
         setError('Não foi possível carregar os dados.');
@@ -121,7 +130,7 @@ const WeeklyExpirationPage = () => {
   const handleToggleTreated = async (scheduleId: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
     // Atualiza a UI otimisticamente
-    setExpiringSchedules(expiringSchedules.map(s => s.id === scheduleId ? { ...s, validadeTratada: newStatus } : s));
+    setAllSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, validadeTratada: newStatus } : s));
 
     try {
       const scheduleRef = doc(db, 'schedules', scheduleId);
@@ -129,7 +138,7 @@ const WeeklyExpirationPage = () => {
     } catch (err) {
       console.error("Erro ao atualizar status:", err);
       // Reverte em caso de erro
-      setExpiringSchedules(expiringSchedules.map(s => s.id === scheduleId ? { ...s, validadeTratada: currentStatus } : s));
+      setAllSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, validadeTratada: currentStatus } : s));
       // TODO: Adicionar toast de erro
     }
   };
@@ -137,7 +146,7 @@ const WeeklyExpirationPage = () => {
   const handleToggleBroadcastTreated = async (scheduleId: string, currentStatus: boolean) => {
     const newStatus = !currentStatus;
     // Atualiza a UI otimisticamente
-    setBroadcastSchedules(broadcastSchedules.map(s => s.id === scheduleId ? { ...s, veiculacaoTratada: newStatus } : s));
+    setAllSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, veiculacaoTratada: newStatus } : s));
 
     try {
       const scheduleRef = doc(db, 'schedules', scheduleId);
@@ -145,9 +154,18 @@ const WeeklyExpirationPage = () => {
     } catch (err) {
       console.error("Erro ao atualizar status de veiculação:", err);
       // Reverte em caso de erro
-      setBroadcastSchedules(broadcastSchedules.map(s => s.id === scheduleId ? { ...s, veiculacaoTratada: currentStatus } : s));
+      setAllSchedules(prev => prev.map(s => s.id === scheduleId ? { ...s, veiculacaoTratada: currentStatus } : s));
       // TODO: Adicionar toast de erro
     }
+  };
+
+  const navigateWeek = (weekOffset: number) => {
+    const targetWeek = addDays(selectedWeek.start, weekOffset * 7);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.set('week', formatDate(targetWeek, 'yyyy-MM-dd'));
+      return next;
+    }, { replace: true });
   };
 
   const getStatusColor = (status: string) => {
@@ -278,17 +296,46 @@ const WeeklyExpirationPage = () => {
         </div>
         <Card className="shadow-lg border-border/50">
           <CardHeader>
-            <CardTitle className="text-2xl flex items-center gap-2">
-              {activeTab === 'expiring' ? (
-                <><AlertTriangle className="w-6 h-6 text-amber-600" />Validades da Semana</>
-              ) : (
-                <><PlayCircle className="w-6 h-6 text-green-600" />Veiculações da Semana</>
-              )}
+            <CardTitle className="flex flex-wrap items-center justify-between gap-3 text-2xl">
+              <span className="flex items-center gap-2">
+                {activeTab === 'expiring' ? (
+                  <><AlertTriangle className="w-6 h-6 text-amber-600" />Validades da Semana</>
+                ) : (
+                  <><PlayCircle className="w-6 h-6 text-green-600" />Veiculações da Semana</>
+                )}
+              </span>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigateWeek(-1)}
+                  title="Semana anterior"
+                  aria-label="Ver semana anterior"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </Button>
+                <span className="min-w-[104px] text-center text-sm font-medium text-foreground" aria-live="polite">
+                  {selectedWeek.range}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                  onClick={() => navigateWeek(1)}
+                  title="Próxima semana"
+                  aria-label="Ver próxima semana"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </div>
             </CardTitle>
             <CardDescription>
               {activeTab === 'expiring' 
-                ? 'Lista de clientes com playlists expirando esta semana.'
-                : 'Lista de clientes com veiculações ativas ou programadas para esta semana.'}
+                ? 'Lista de clientes com playlists expirando na semana selecionada.'
+                : 'Lista de clientes com veiculações ativas ou programadas para a semana selecionada.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -415,8 +462,8 @@ const WeeklyExpirationPage = () => {
                         className="text-center h-24 text-muted-foreground"
                       >
                         {activeTab === 'expiring' 
-                          ? 'Nenhum agendamento expirando esta semana.'
-                          : 'Nenhuma veiculação programada para esta semana.'}
+                          ? 'Nenhum agendamento expirando na semana selecionada.'
+                          : 'Nenhuma veiculação programada para a semana selecionada.'}
                       </TableCell>
                     </TableRow>
                   )}
