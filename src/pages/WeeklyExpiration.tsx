@@ -67,16 +67,28 @@ const WeeklyExpirationPage = () => {
     };
   }, [weekReferenceDate]);
 
-  const expiringSchedules = useMemo(() => allSchedules.filter(schedule => {
-    if (!schedule.endDate) return false;
-    const endDate = parseDate(schedule.endDate);
-    return endDate ? isWithinInterval(endDate, { start: selectedWeek.start, end: selectedWeek.end }) : false;
-  }), [allSchedules, selectedWeek]);
+  const expiringSchedules = useMemo(() => allSchedules
+    .filter(schedule => {
+      if (!schedule.endDate) return false;
+      const endDate = parseDate(schedule.endDate);
+      return endDate ? isWithinInterval(endDate, { start: selectedWeek.start, end: selectedWeek.end }) : false;
+    })
+    .sort((a, b) => {
+      const dateDiff = (parseDate(a.endDate)?.getTime() ?? 0) - (parseDate(b.endDate)?.getTime() ?? 0);
+      if (dateDiff !== 0) return dateDiff;
+      return (a.clientName || '').localeCompare(b.clientName || '', 'pt-BR');
+    }), [allSchedules, selectedWeek]);
 
-  const broadcastSchedules = useMemo(() => allSchedules.filter(schedule => {
-    const startDate = parseDate(schedule.startDate);
-    return startDate ? isWithinInterval(startDate, { start: selectedWeek.start, end: selectedWeek.end }) : false;
-  }), [allSchedules, selectedWeek]);
+  const broadcastSchedules = useMemo(() => allSchedules
+    .filter(schedule => {
+      const startDate = parseDate(schedule.startDate);
+      return startDate ? isWithinInterval(startDate, { start: selectedWeek.start, end: selectedWeek.end }) : false;
+    })
+    .sort((a, b) => {
+      const dateDiff = (parseDate(a.startDate)?.getTime() ?? 0) - (parseDate(b.startDate)?.getTime() ?? 0);
+      if (dateDiff !== 0) return dateDiff;
+      return (a.clientName || '').localeCompare(b.clientName || '', 'pt-BR');
+    }), [allSchedules, selectedWeek]);
 
   const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
     const today = new Date();
