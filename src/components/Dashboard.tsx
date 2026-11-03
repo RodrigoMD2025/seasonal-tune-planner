@@ -80,6 +80,13 @@ type BarChartTooltipProps = TooltipProps<number, string> & {
   groupByClient?: boolean;
 };
 
+type DisplayClient = {
+  name: string;
+  count: number;
+  periods: string[];
+  treatedCount: number;
+};
+
 const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
 
@@ -88,28 +95,30 @@ const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTool
   const clients = data?.clients ?? [];
   const dayLabel = typeof label === 'string' ? label : null;
 
-  const displayClients: Array<{ name: string; count: number; periods: string[]; treated?: boolean }> = groupByClient
+  const displayClients: DisplayClient[] = groupByClient
     ? Array.from(
         clients.reduce((map, client) => {
           const existing = map.get(client.name);
           if (existing) {
             existing.count += 1;
             if (client.period) existing.periods.push(client.period);
+            if (client.treated) existing.treatedCount += 1;
           } else {
             map.set(client.name, {
               name: client.name,
               count: 1,
               periods: client.period ? [client.period] : [],
+              treatedCount: client.treated ? 1 : 0,
             });
           }
           return map;
-        }, new Map<string, { name: string; count: number; periods: string[] }>()).values(),
+        }, new Map<string, DisplayClient>()).values(),
       )
     : clients.map(client => ({
         name: client.name,
         count: 1,
         periods: client.period ? [client.period] : [],
-        treated: client.treated,
+        treatedCount: client.treated ? 1 : 0,
       }));
 
   return (
@@ -131,31 +140,42 @@ const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTool
       </div>
       {displayClients.length > 0 && (
         <ul className="mt-1.5 space-y-1">
-          {displayClients.map((client, index) => (
-            <li key={`${client.name}-${index}`} className="flex items-start gap-1.5 text-xs">
-              <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${client.treated ? 'bg-green-500' : 'bg-primary'}`} />
-              <div className="min-w-0">
-                <div className="flex items-baseline gap-1.5">
-                  <span
-                    className={`min-w-0 break-words ${client.treated ? 'text-muted-foreground line-through' : ''}`}
-                    title={client.treated ? 'Tratativa concluída' : undefined}
-                  >
-                    {client.name}
-                  </span>
-                  {client.count > 1 && (
-                    <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-                      {client.count}×
+          {displayClients.map((client, index) => {
+            const allTreated = client.treatedCount > 0 && client.treatedCount === client.count;
+            const someTreated = client.treatedCount > 0 && client.treatedCount < client.count;
+            const sortedPeriods = [...client.periods].sort((a, b) => PERIOD_COLLATOR.compare(a, b));
+
+            return (
+              <li key={`${client.name}-${index}`} className="flex items-start gap-1.5 text-xs">
+                <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${allTreated ? 'bg-green-500' : someTreated ? 'bg-amber-500' : 'bg-primary'}`} />
+                <div className="min-w-0">
+                  <div className="flex items-baseline gap-1.5">
+                    <span
+                      className={`min-w-0 break-words ${allTreated ? 'text-muted-foreground line-through' : ''}`}
+                      title={allTreated ? 'Tratativa concluída' : someTreated ? `${client.treatedCount} de ${client.count} tratativas concluídas` : undefined}
+                    >
+                      {client.name}
                     </span>
+                    {client.count > 1 && (
+                      <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                        {client.count}×
+                      </span>
+                    )}
+                    {someTreated && (
+                      <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                        {client.treatedCount}/{client.count} OK
+                      </span>
+                    )}
+                  </div>
+                  {sortedPeriods.length > 0 && (
+                    <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                      {sortedPeriods.join(' • ')}
+                    </div>
                   )}
                 </div>
-                {client.count > 1 && client.periods.length > 0 && (
-                  <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-                    {[...client.periods].sort((a, b) => PERIOD_COLLATOR.compare(a, b)).join(' • ')}
-                  </div>
-                )}
-              </div>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>
@@ -293,7 +313,7 @@ const Dashboard = () => {
       if (endDate) {
         const dayIndex = endDate.getDay();
         expirationsPerDayOfWeek[dayIndex].count++;
-        expirationsPerDayOfWeek[dayIndex].clients.push({ name: getClientName(schedule) });
+        expirationsPerDayOfWeek[dayIndex].clients.push({ name: getClientName(schedule), period: schedule.period });
       }
     });
 
@@ -320,6 +340,7 @@ const Dashboard = () => {
         broadcastsPerDayOfWeek[dayIndex].count++;
         broadcastsPerDayOfWeek[dayIndex].clients.push({
           name: getClientName(schedule),
+          period: schedule.period,
           treated: !!schedule.veiculacaoTratada,
         });
       }
@@ -465,7 +486,7 @@ const Dashboard = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip groupByClient={isNewSchedulesCard} />} />
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip groupByClient={isNewSchedulesCard || isWeeklyCard} />} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {cardBarData.map((entry, index) => {
                                 const isSelectedDay = isNewSchedulesCard && createdDayFilter === index;
