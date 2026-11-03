@@ -26,13 +26,19 @@ interface Schedule {
   endDate: Timestamp | string;
   period: string;
   validadeTratada?: boolean;
+  veiculacaoTratada?: boolean;
   createdAt?: Timestamp | string;
+}
+
+interface BarChartClient {
+  name: string;
+  treated?: boolean;
 }
 
 interface BarChartDataPoint {
   name: string;
   count: number;
-  clients?: string[];
+  clients?: BarChartClient[];
 }
 
 interface DashboardStat {
@@ -84,9 +90,14 @@ const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string
       {clients.length > 0 && (
         <ul className="mt-1.5 space-y-1">
           {clients.map((client, index) => (
-            <li key={`${client}-${index}`} className="flex items-start gap-1.5 text-xs">
-              <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-primary" />
-              <span className="min-w-0 break-words">{client}</span>
+            <li key={`${client.name}-${index}`} className="flex items-start gap-1.5 text-xs">
+              <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${client.treated ? 'bg-green-500' : 'bg-primary'}`} />
+              <span
+                className={`min-w-0 break-words ${client.treated ? 'text-muted-foreground line-through' : ''}`}
+                title={client.treated ? 'Tratativa concluída' : undefined}
+              >
+                {client.name}
+              </span>
             </li>
           ))}
         </ul>
@@ -169,13 +180,13 @@ const Dashboard = () => {
           return createdAtDate && isDateInCurrentWeek(createdAtDate);
         });
 
-        const newSchedulesPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
+        const newSchedulesPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as BarChartClient[] }));
         newSchedulesThisWeek.forEach(schedule => {
           const createdAtDate = schedule.createdAt instanceof Timestamp ? schedule.createdAt.toDate() : parseDate(schedule.createdAt as string);
           if (createdAtDate) {
             const dayIndex = createdAtDate.getDay();
             newSchedulesPerDayOfWeek[dayIndex].count++;
-            newSchedulesPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
+            newSchedulesPerDayOfWeek[dayIndex].clients.push({ name: getClientName(schedule) });
           }
         });
 
@@ -220,13 +231,13 @@ const Dashboard = () => {
       return endDate ? isWithinInterval(endDate, { start, end }) : false;
     });
 
-    const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
+    const expirationsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as BarChartClient[] }));
     expiringSchedules.forEach(schedule => {
       const endDate = parseDate(schedule.endDate);
       if (endDate) {
         const dayIndex = endDate.getDay();
         expirationsPerDayOfWeek[dayIndex].count++;
-        expirationsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
+        expirationsPerDayOfWeek[dayIndex].clients.push({ name: getClientName(schedule) });
       }
     });
 
@@ -245,13 +256,16 @@ const Dashboard = () => {
              isWithinInterval(endDate, weekInterval);
     });
 
-    const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as string[] }));
+    const broadcastsPerDayOfWeek = DAYS_OF_WEEK.map((dayName) => ({ name: dayName, count: 0, clients: [] as BarChartClient[] }));
     broadcastingInWeek.forEach(schedule => {
       const startDate = parseDate(schedule.startDate);
       if (startDate && isWithinInterval(startDate, { start, end })) {
         const dayIndex = startDate.getDay();
         broadcastsPerDayOfWeek[dayIndex].count++;
-        broadcastsPerDayOfWeek[dayIndex].clients.push(getClientName(schedule));
+        broadcastsPerDayOfWeek[dayIndex].clients.push({
+          name: getClientName(schedule),
+          treated: !!schedule.veiculacaoTratada,
+        });
       }
     });
 
