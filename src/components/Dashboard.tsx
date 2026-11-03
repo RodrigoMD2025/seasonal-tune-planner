@@ -76,8 +76,10 @@ const parseDate = (date: string | Timestamp): Date | null => {
 
 // Tooltip dos gráficos de barra: mostra a quantidade e, quando disponível, os clientes do dia.
 // No card de novos agendamentos, agrupa os períodos do mesmo cliente em uma única linha.
+// No primeiro card, exibe o período na mesma linha do cliente.
 type BarChartTooltipProps = TooltipProps<number, string> & {
   groupByClient?: boolean;
+  weeklyCardLayout?: boolean;
 };
 
 type DisplayClient = {
@@ -87,7 +89,7 @@ type DisplayClient = {
   treatedCount: number;
 };
 
-const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTooltipProps) => {
+const BarChartTooltip = ({ active, payload, label, groupByClient, weeklyCardLayout }: BarChartTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
 
   const data = payload[0]?.payload as BarChartDataPoint | undefined;
@@ -125,7 +127,9 @@ const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTool
     <div className="min-w-[160px] max-w-[240px] rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
       <div className="border-b border-border/60 pb-1.5 font-medium text-foreground">
         {dayLabel && <span>{dayLabel} • </span>}
-        {groupByClient ? (
+        {weeklyCardLayout ? (
+          <>{displayClients.length} {displayClients.length === 1 ? 'Cliente' : 'Clientes'}</>
+        ) : groupByClient ? (
           <>
             {count} {count === 1 ? 'agendamento' : 'agendamentos'}
             {displayClients.length > 0 && (
@@ -148,31 +152,43 @@ const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTool
             return (
               <li key={`${client.name}-${index}`} className="flex items-start gap-1.5 text-xs">
                 <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${allTreated ? 'bg-green-500' : someTreated ? 'bg-amber-500' : 'bg-primary'}`} />
-                <div className="min-w-0">
-                  <div className="flex items-baseline gap-1.5">
-                    <span
-                      className={`min-w-0 break-words ${allTreated ? 'text-muted-foreground line-through' : ''}`}
-                      title={allTreated ? 'Tratativa concluída' : someTreated ? `${client.treatedCount} de ${client.count} tratativas concluídas` : undefined}
-                    >
-                      {client.name}
-                    </span>
-                    {client.count > 1 && (
-                      <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-                        {client.count}×
-                      </span>
+                {weeklyCardLayout ? (
+                  <span
+                    className={`min-w-0 break-words ${allTreated ? 'text-muted-foreground line-through' : ''}`}
+                    title={allTreated ? 'Tratativa concluída' : someTreated ? `${client.treatedCount} de ${client.count} tratativas concluídas` : undefined}
+                  >
+                    {client.name}
+                    {sortedPeriods.length > 0 && (
+                      <span className="text-muted-foreground"> • {sortedPeriods.join(' • ')}</span>
                     )}
-                    {someTreated && (
-                      <span className="shrink-0 text-[10px] font-medium text-amber-600">
-                        {client.treatedCount}/{client.count} OK
+                  </span>
+                ) : (
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span
+                        className={`min-w-0 break-words ${allTreated ? 'text-muted-foreground line-through' : ''}`}
+                        title={allTreated ? 'Tratativa concluída' : someTreated ? `${client.treatedCount} de ${client.count} tratativas concluídas` : undefined}
+                      >
+                        {client.name}
                       </span>
+                      {client.count > 1 && (
+                        <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                          {client.count}×
+                        </span>
+                      )}
+                      {someTreated && (
+                        <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                          {client.treatedCount}/{client.count} OK
+                        </span>
+                      )}
+                    </div>
+                    {sortedPeriods.length > 0 && (
+                      <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                        {sortedPeriods.join(' • ')}
+                      </div>
                     )}
                   </div>
-                  {sortedPeriods.length > 0 && (
-                    <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-                      {sortedPeriods.join(' • ')}
-                    </div>
-                  )}
-                </div>
+                )}
               </li>
             );
           })}
@@ -486,7 +502,7 @@ const Dashboard = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip groupByClient={isNewSchedulesCard || isWeeklyCard} />} />
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip groupByClient={isNewSchedulesCard || isWeeklyCard} weeklyCardLayout={isWeeklyCard} />} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {cardBarData.map((entry, index) => {
                                 const isSelectedDay = isNewSchedulesCard && createdDayFilter === index;
