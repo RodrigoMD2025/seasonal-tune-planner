@@ -62,6 +62,7 @@ type WeeklyChartType = 'expiring' | 'broadcasting';
 const PIE_COLORS_VEICULACAO = ['#34d399', '#fde047']; // Verde e Amarelo
 const PIE_COLORS_AGENDADOS = ['#818cf8', '#e5e7eb']; // Roxo e Cinza
 const DAYS_OF_WEEK = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+const PERIOD_COLLATOR = new Intl.Collator('pt-BR', { numeric: true, sensitivity: 'base' });
 
 const parseDate = (date: string | Timestamp): Date | null => {
   if (date instanceof Timestamp) return date.toDate();
@@ -149,7 +150,7 @@ const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTool
                 </div>
                 {client.count > 1 && client.periods.length > 0 && (
                   <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-                    {client.periods.join(' • ')}
+                    {[...client.periods].sort((a, b) => PERIOD_COLLATOR.compare(a, b)).join(' • ')}
                   </div>
                 )}
               </div>
