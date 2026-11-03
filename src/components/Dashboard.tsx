@@ -33,6 +33,7 @@ interface Schedule {
 interface BarChartClient {
   name: string;
   treated?: boolean;
+  period?: string;
 }
 
 interface BarChartDataPoint {
@@ -73,7 +74,12 @@ const parseDate = (date: string | Timestamp): Date | null => {
 };
 
 // Tooltip dos gráficos de barra: mostra a quantidade e, quando disponível, os clientes do dia.
-const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+// No card de novos agendamentos, agrupa os períodos do mesmo cliente em uma única linha.
+type BarChartTooltipProps = TooltipProps<number, string> & {
+  groupByClient?: boolean;
+};
+
+const BarChartTooltip = ({ active, payload, label, groupByClient }: BarChartTooltipProps) => {
   if (!active || !payload || payload.length === 0) return null;
 
   const data = payload[0]?.payload as BarChartDataPoint | undefined;
@@ -81,23 +87,72 @@ const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string
   const clients = data?.clients ?? [];
   const dayLabel = typeof label === 'string' ? label : null;
 
+  const displayClients: Array<{ name: string; count: number; periods: string[]; treated?: boolean }> = groupByClient
+    ? Array.from(
+        clients.reduce((map, client) => {
+          const existing = map.get(client.name);
+          if (existing) {
+            existing.count += 1;
+            if (client.period) existing.periods.push(client.period);
+          } else {
+            map.set(client.name, {
+              name: client.name,
+              count: 1,
+              periods: client.period ? [client.period] : [],
+            });
+          }
+          return map;
+        }, new Map<string, { name: string; count: number; periods: string[] }>()).values(),
+      )
+    : clients.map(client => ({
+        name: client.name,
+        count: 1,
+        periods: client.period ? [client.period] : [],
+        treated: client.treated,
+      }));
+
   return (
     <div className="min-w-[160px] max-w-[240px] rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
       <div className="border-b border-border/60 pb-1.5 font-medium text-foreground">
         {dayLabel && <span>{dayLabel} • </span>}
-        {count} {count === 1 ? 'Cliente' : 'Clientes'}
+        {groupByClient ? (
+          <>
+            {count} {count === 1 ? 'agendamento' : 'agendamentos'}
+            {displayClients.length > 0 && (
+              <span className="font-normal text-muted-foreground">
+                {' '}• {displayClients.length} {displayClients.length === 1 ? 'cliente' : 'clientes'}
+              </span>
+            )}
+          </>
+        ) : (
+          <>{count} {count === 1 ? 'Cliente' : 'Clientes'}</>
+        )}
       </div>
-      {clients.length > 0 && (
+      {displayClients.length > 0 && (
         <ul className="mt-1.5 space-y-1">
-          {clients.map((client, index) => (
+          {displayClients.map((client, index) => (
             <li key={`${client.name}-${index}`} className="flex items-start gap-1.5 text-xs">
               <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${client.treated ? 'bg-green-500' : 'bg-primary'}`} />
-              <span
-                className={`min-w-0 break-words ${client.treated ? 'text-muted-foreground line-through' : ''}`}
-                title={client.treated ? 'Tratativa concluída' : undefined}
-              >
-                {client.name}
-              </span>
+              <div className="min-w-0">
+                <div className="flex items-baseline gap-1.5">
+                  <span
+                    className={`min-w-0 break-words ${client.treated ? 'text-muted-foreground line-through' : ''}`}
+                    title={client.treated ? 'Tratativa concluída' : undefined}
+                  >
+                    {client.name}
+                  </span>
+                  {client.count > 1 && (
+                    <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
+                      {client.count}×
+                    </span>
+                  )}
+                </div>
+                {client.count > 1 && client.periods.length > 0 && (
+                  <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
+                    {client.periods.join(' • ')}
+                  </div>
+                )}
+              </div>
             </li>
           ))}
         </ul>
@@ -186,7 +241,7 @@ const Dashboard = () => {
           if (createdAtDate) {
             const dayIndex = createdAtDate.getDay();
             newSchedulesPerDayOfWeek[dayIndex].count++;
-            newSchedulesPerDayOfWeek[dayIndex].clients.push({ name: getClientName(schedule) });
+            newSchedulesPerDayOfWeek[dayIndex].clients.push({ name: getClientName(schedule), period: schedule.period });
           }
         });
 
@@ -409,7 +464,7 @@ const Dashboard = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip />} />
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip groupByClient={isNewSchedulesCard} />} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
                               {cardBarData.map((entry, index) => {
                                 const isSelectedDay = isNewSchedulesCard && createdDayFilter === index;
