@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useEffect, useMemo, useState } from "react";
 import { CreateScheduleDialog } from "./CreateScheduleDialog";
 import { ImportClientsDialog } from "./ImportClientsDialog";
 import { ReportGenerator } from "./ReportGenerator";
@@ -74,13 +75,29 @@ const parseDate = (date: string | Timestamp): Date | null => {
   return null;
 };
 
-// Tooltip dos gráficos de barra: mostra a quantidade e, quando disponível, os clientes do dia.
-// No card de novos agendamentos, agrupa os períodos do mesmo cliente em uma única linha.
-// No primeiro card, exibe o período na mesma linha do cliente.
-type BarChartTooltipProps = TooltipProps<number, string> & {
-  groupByClient?: boolean;
-  weeklyCardLayout?: boolean;
+// Tooltip enxuto dos gráficos de barra: exibe apenas a quantidade de clientes do dia.
+// Os detalhes (clientes e períodos) são exibidos no pop-up aberto ao clicar na barra.
+const BarChartTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
+  if (!active || !payload || payload.length === 0) return null;
+
+  const data = payload[0]?.payload as BarChartDataPoint | undefined;
+  const clients = data?.clients ?? [];
+  const uniqueClients = new Set(clients.map(client => client.name)).size;
+  const count = clients.length > 0 ? uniqueClients : Number(data?.count ?? payload[0]?.value ?? 0);
+  const dayLabel = typeof label === 'string' ? label : null;
+
+  return (
+    <div className="rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
+      <div className="font-medium text-foreground">
+        {dayLabel && <span>{dayLabel} • </span>}
+        {count} {count === 1 ? 'Cliente' : 'Clientes'}
+      </div>
+      <p className="mt-1 text-[11px] text-muted-foreground">Clique na barra para ver os detalhes.</p>
+    </div>
+  );
 };
+
+type DayDialogMode = 'expiring' | 'broadcasting' | 'newSchedules';
 
 type DisplayClient = {
   name: string;
@@ -89,112 +106,95 @@ type DisplayClient = {
   treatedCount: number;
 };
 
-const BarChartTooltip = ({ active, payload, label, groupByClient, weeklyCardLayout }: BarChartTooltipProps) => {
-  if (!active || !payload || payload.length === 0) return null;
+const groupClientsByName = (clients: BarChartClient[]): DisplayClient[] =>
+  Array.from(
+    clients.reduce((map, client) => {
+      const existing = map.get(client.name);
+      if (existing) {
+        existing.count += 1;
+        if (client.period) existing.periods.push(client.period);
+        if (client.treated) existing.treatedCount += 1;
+      } else {
+        map.set(client.name, {
+          name: client.name,
+          count: 1,
+          periods: client.period ? [client.period] : [],
+          treatedCount: client.treated ? 1 : 0,
+        });
+      }
+      return map;
+    }, new Map<string, DisplayClient>()).values(),
+  );
 
-  const data = payload[0]?.payload as BarChartDataPoint | undefined;
-  const count = Number(data?.count ?? payload[0]?.value ?? 0);
-  const clients = data?.clients ?? [];
-  const dayLabel = typeof label === 'string' ? label : null;
+const DAY_DIALOG_DESCRIPTIONS: Record<DayDialogMode, string> = {
+  expiring: 'Clientes com playlists vencendo neste dia.',
+  broadcasting: 'Clientes que iniciarão a veiculação neste dia.',
+  newSchedules: 'Agendamentos criados neste dia.',
+};
 
-  const displayClients: DisplayClient[] = groupByClient
-    ? Array.from(
-        clients.reduce((map, client) => {
-          const existing = map.get(client.name);
-          if (existing) {
-            existing.count += 1;
-            if (client.period) existing.periods.push(client.period);
-            if (client.treated) existing.treatedCount += 1;
-          } else {
-            map.set(client.name, {
-              name: client.name,
-              count: 1,
-              periods: client.period ? [client.period] : [],
-              treatedCount: client.treated ? 1 : 0,
-            });
-          }
-          return map;
-        }, new Map<string, DisplayClient>()).values(),
-      )
-    : clients.map(client => ({
-        name: client.name,
-        count: 1,
-        periods: client.period ? [client.period] : [],
-        treatedCount: client.treated ? 1 : 0,
-      }));
+interface DayClientsDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: BarChartDataPoint | null;
+  mode: DayDialogMode;
+}
+
+const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogProps) => {
+  const displayClients = groupClientsByName(data?.clients ?? []);
+  const dayLabel = data?.name ?? '';
 
   return (
-    <div className="min-w-[160px] max-w-[240px] rounded-md border border-border bg-popover px-3 py-2 text-sm text-popover-foreground shadow-md">
-      <div className="border-b border-border/60 pb-1.5 font-medium text-foreground">
-        {dayLabel && <span>{dayLabel} • </span>}
-        {weeklyCardLayout ? (
-          <>{displayClients.length} {displayClients.length === 1 ? 'Cliente' : 'Clientes'}</>
-        ) : groupByClient ? (
-          <>
-            {count} {count === 1 ? 'agendamento' : 'agendamentos'}
-            {displayClients.length > 0 && (
-              <span className="font-normal text-muted-foreground">
-                {' '}• {displayClients.length} {displayClients.length === 1 ? 'cliente' : 'clientes'}
-              </span>
-            )}
-          </>
-        ) : (
-          <>{count} {count === 1 ? 'Cliente' : 'Clientes'}</>
-        )}
-      </div>
-      {displayClients.length > 0 && (
-        <ul className="mt-1.5 space-y-1">
-          {displayClients.map((client, index) => {
-            const allTreated = client.treatedCount > 0 && client.treatedCount === client.count;
-            const someTreated = client.treatedCount > 0 && client.treatedCount < client.count;
-            const sortedPeriods = [...client.periods].sort((a, b) => PERIOD_COLLATOR.compare(a, b));
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-xl">
+            {dayLabel && <>{dayLabel} • </>}
+            {displayClients.length} {displayClients.length === 1 ? 'Cliente' : 'Clientes'}
+          </DialogTitle>
+          <DialogDescription className="text-base leading-relaxed text-justify">
+            {DAY_DIALOG_DESCRIPTIONS[mode]}
+          </DialogDescription>
+        </DialogHeader>
 
-            return (
-              <li key={`${client.name}-${index}`} className="flex items-start gap-1.5 text-xs">
-                <span className={`mt-1.5 h-1 w-1 shrink-0 rounded-full ${allTreated ? 'bg-green-500' : someTreated ? 'bg-amber-500' : 'bg-primary'}`} />
-                {weeklyCardLayout ? (
-                  <span
-                    className={`min-w-0 break-words ${allTreated ? 'text-muted-foreground line-through' : ''}`}
-                    title={allTreated ? 'Tratativa concluída' : someTreated ? `${client.treatedCount} de ${client.count} tratativas concluídas` : undefined}
-                  >
-                    {client.name}
-                    {sortedPeriods.length > 0 && (
-                      <span className="text-muted-foreground"> • {sortedPeriods.join(' • ')}</span>
-                    )}
-                  </span>
-                ) : (
-                  <div className="min-w-0">
-                    <div className="flex items-baseline gap-1.5">
-                      <span
-                        className={`min-w-0 break-words ${allTreated ? 'text-muted-foreground line-through' : ''}`}
-                        title={allTreated ? 'Tratativa concluída' : someTreated ? `${client.treatedCount} de ${client.count} tratativas concluídas` : undefined}
-                      >
-                        {client.name}
-                      </span>
+        {displayClients.length > 0 ? (
+          <ul className="space-y-3">
+            {displayClients.map((client, index) => {
+              const allTreated = client.treatedCount > 0 && client.treatedCount === client.count;
+              const someTreated = client.treatedCount > 0 && client.treatedCount < client.count;
+              const sortedPeriods = [...client.periods].sort((a, b) => PERIOD_COLLATOR.compare(a, b));
+
+              return (
+                <li key={`${client.name}-${index}`} className="rounded-lg border border-border/60 bg-muted/20 px-4 py-3">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <p className={`min-w-0 text-base leading-relaxed text-justify ${allTreated ? 'text-muted-foreground line-through' : 'text-foreground'}`}>
+                      <span className="font-medium">{client.name}</span>
+                      {sortedPeriods.length > 0 && (
+                        <span className="font-normal text-muted-foreground"> • {sortedPeriods.join(' • ')}</span>
+                      )}
+                    </p>
+                    <div className="flex shrink-0 flex-wrap items-center gap-2">
                       {client.count > 1 && (
-                        <span className="shrink-0 rounded bg-muted px-1 py-0.5 text-[10px] font-medium text-muted-foreground">
-                          {client.count}×
-                        </span>
+                        <Badge variant="secondary">{client.count} períodos</Badge>
+                      )}
+                      {allTreated && (
+                        <Badge className="bg-green-600 text-white hover:bg-green-600">Tratativa concluída</Badge>
                       )}
                       {someTreated && (
-                        <span className="shrink-0 text-[10px] font-medium text-amber-600">
+                        <Badge className="bg-amber-500 text-white hover:bg-amber-500">
                           {client.treatedCount}/{client.count} OK
-                        </span>
+                        </Badge>
                       )}
                     </div>
-                    {sortedPeriods.length > 0 && (
-                      <div className="mt-0.5 text-[10px] leading-tight text-muted-foreground">
-                        {sortedPeriods.join(' • ')}
-                      </div>
-                    )}
                   </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="text-base text-muted-foreground">Nenhum cliente encontrado para este dia.</p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 };
 
@@ -206,11 +206,10 @@ const Dashboard = () => {
   const [statsLoading, setStatsLoading] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [weeklyChartType, setWeeklyChartType] = useState<WeeklyChartType>('expiring');
-  const [createdDayFilter, setCreatedDayFilter] = useState<number | null>(null);
   const [weekReferenceDate, setWeekReferenceDate] = useState(() => new Date());
   const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [clientNamesById, setClientNamesById] = useState<Map<string, string>>(() => new Map());
-  const schedulesSectionRef = useRef<HTMLDivElement>(null);
+  const [dayDialog, setDayDialog] = useState<{ data: BarChartDataPoint; mode: DayDialogMode } | null>(null);
 
   const initialStats: DashboardStat[] = [
     { title: "Validade Próxima (Semana)", value: "0", description: "Carregando...", icon: AlertTriangle },
@@ -390,19 +389,8 @@ const Dashboard = () => {
     setWeeklyChartType(prev => prev === 'expiring' ? 'broadcasting' : 'expiring');
   };
 
-  const handleCreatedDayClick = (dayName: string) => {
-    const dayIndex = DAYS_OF_WEEK.indexOf(dayName);
-    if (dayIndex === -1) return;
-
-    const isClearing = createdDayFilter === dayIndex;
-    setActiveTab("schedules");
-    setCreatedDayFilter(isClearing ? null : dayIndex);
-
-    if (!isClearing) {
-      window.setTimeout(() => {
-        schedulesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
-    }
+  const handleBarClick = (entry: BarChartDataPoint, mode: DayDialogMode) => {
+    setDayDialog({ data: entry, mode });
   };
 
   return (
@@ -502,34 +490,22 @@ const Dashboard = () => {
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                             <XAxis dataKey="name" axisLine={false} tickLine={false} style={{ fontSize: '12px' }} />
                             <YAxis axisLine={false} tickLine={false} allowDecimals={false} width={20} />
-                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip groupByClient={isNewSchedulesCard || isWeeklyCard} weeklyCardLayout={isWeeklyCard} />} />
+                            <Tooltip cursor={{ fill: 'hsl(var(--muted))' }} content={<BarChartTooltip />} />
                             <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                              {cardBarData.map((entry, index) => {
-                                const isSelectedDay = isNewSchedulesCard && createdDayFilter === index;
-                                return (
-                                  <Cell
-                                    key={`cell-${index}`}
-                                    fill={isSelectedDay ? '#15803d' : barColor}
-                                    fillOpacity={isNewSchedulesCard && createdDayFilter !== null && !isSelectedDay ? 0.45 : 1}
-                                    stroke={isSelectedDay ? '#14532d' : undefined}
-                                    strokeWidth={isSelectedDay ? 2 : undefined}
-                                    className={isNewSchedulesCard ? 'cursor-pointer' : undefined}
-                                    onClick={isNewSchedulesCard ? () => handleCreatedDayClick(entry.name) : undefined}
-                                  />
-                                );
-                              })}
+                              {cardBarData.map((entry, index) => (
+                                <Cell
+                                  key={`cell-${index}`}
+                                  fill={barColor}
+                                  className={(isWeeklyCard || isNewSchedulesCard) ? 'cursor-pointer' : undefined}
+                                  onClick={(isWeeklyCard || isNewSchedulesCard)
+                                    ? () => handleBarClick(entry, isWeeklyCard ? weeklyChartType : 'newSchedules')
+                                    : undefined}
+                                />
+                              ))}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
-                    )}
-
-                    {isNewSchedulesCard && displayStat.barChartData && (
-                      <p className="mt-3 text-center text-xs text-muted-foreground">
-                        {createdDayFilter !== null
-                          ? `Filtro ativo: ${DAYS_OF_WEEK[createdDayFilter]}. Clique novamente na barra para limpar.`
-                          : "Clique na barra de um dia para filtrar os agendamentos criados nele."}
-                      </p>
                     )}
 
                     {displayStat.title === "Veiculação Natalinas" && displayStat.chartData && (
@@ -590,16 +566,20 @@ const Dashboard = () => {
           <Button variant={activeTab === "clients" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("clients")} className="px-6"><Users className="w-4 h-4 mr-2" />Clientes</Button>
         </div>
 
-        <div ref={schedulesSectionRef} className="scroll-mt-6 bg-card rounded-lg shadow-sm border border-border/50">
+        <div className="scroll-mt-6 bg-card rounded-lg shadow-sm border border-border/50">
           {activeTab === "schedules" && (
-            <ScheduleList
-              createdDayFilter={createdDayFilter}
-              onClearCreatedDayFilter={() => setCreatedDayFilter(null)}
-            />
+            <ScheduleList />
           )}
           {activeTab === "clients" && <ClientList />}
         </div>
       </main>
+
+      <DayClientsDialog
+        open={dayDialog !== null}
+        onOpenChange={(open) => { if (!open) setDayDialog(null); }}
+        data={dayDialog?.data ?? null}
+        mode={dayDialog?.mode ?? 'expiring'}
+      />
 
       <CreateScheduleDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} />
       <ImportClientsDialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen} />
