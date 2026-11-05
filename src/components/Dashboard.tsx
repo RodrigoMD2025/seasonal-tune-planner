@@ -188,7 +188,9 @@ const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogPr
                         <Badge variant="secondary">{client.count} períodos</Badge>
                       )}
                       {allTreated && (
-                        <Badge className="bg-green-600 text-white hover:bg-green-600">Tratativa concluída</Badge>
+                        <span className="inline-flex items-center rounded-full bg-green-500/15 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400">
+                          Tratativa concluída
+                        </span>
                       )}
                       {someTreated && (
                         <Badge className="bg-amber-500 text-white hover:bg-amber-500">
