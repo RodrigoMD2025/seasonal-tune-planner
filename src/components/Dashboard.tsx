@@ -369,7 +369,7 @@ const Dashboard = () => {
       description: "Clientes pendentes",
       icon: AlertTriangle,
       barChartData: expirationsPerDayOfWeek,
-      altTitle: "Novos Agendamentos em Veiculação (Semana)",
+      altTitle: "Em Veiculação esta Semana",
       altValue: newBroadcastsCount.toString(),
       altDescription: "Com início na semana",
       altBarChartData: broadcastsPerDayOfWeek,
