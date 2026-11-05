@@ -158,7 +158,7 @@ const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogPr
               <span className={`mr-8 inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${pendingClients > 0 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-green-500/15 text-green-700 dark:text-green-400'}`}>
                 {pendingClients > 0
                   ? `${pendingClients}/${displayClients.length} Clientes Pendentes`
-                  : '100% • Processo concluído'}
+                  : '100% • Processo Concluído'}
               </span>
             )}
           </div>
@@ -189,7 +189,7 @@ const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogPr
                       )}
                       {allTreated && (
                         <span className="inline-flex items-center rounded-full bg-green-500/15 px-3 py-1 text-sm font-medium text-green-700 dark:text-green-400">
-                          Tratativa concluída
+                          Tratativa Concluída
                         </span>
                       )}
                       {someTreated && (
