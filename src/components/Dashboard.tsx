@@ -142,6 +142,8 @@ interface DayClientsDialogProps {
 const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogProps) => {
   const displayClients = groupClientsByName(data?.clients ?? []);
   const dayLabel = data?.name ?? '';
+  const pendingClients = displayClients.filter(client => client.treatedCount < client.count).length;
+  const showTreatmentStats = mode === 'broadcasting' && displayClients.length > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,6 +156,13 @@ const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogPr
           <DialogDescription className="text-base leading-relaxed text-justify">
             {DAY_DIALOG_DESCRIPTIONS[mode]}
           </DialogDescription>
+          {showTreatmentStats && (
+            <div className="pt-1">
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${pendingClients > 0 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-green-500/15 text-green-700 dark:text-green-400'}`}>
+                {pendingClients}/{displayClients.length} Clientes Pendentes
+              </span>
+            </div>
+          )}
         </DialogHeader>
 
         {displayClients.length > 0 ? (
