@@ -149,20 +149,22 @@ const DayClientsDialog = ({ open, onOpenChange, data, mode }: DayClientsDialogPr
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-xl">
-            {dayLabel && <>{dayLabel} • </>}
-            {displayClients.length} {displayClients.length === 1 ? 'Cliente' : 'Clientes'}
-          </DialogTitle>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <DialogTitle className="text-xl">
+              {dayLabel && <>{dayLabel} • </>}
+              {displayClients.length} {displayClients.length === 1 ? 'Cliente' : 'Clientes'}
+            </DialogTitle>
+            {showTreatmentStats && (
+              <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${pendingClients > 0 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-green-500/15 text-green-700 dark:text-green-400'}`}>
+                {pendingClients > 0
+                  ? `${pendingClients}/${displayClients.length} Clientes Pendentes`
+                  : '100% OK • Tratativas concluídas'}
+              </span>
+            )}
+          </div>
           <DialogDescription className="text-base leading-relaxed text-justify">
             {DAY_DIALOG_DESCRIPTIONS[mode]}
           </DialogDescription>
-          {showTreatmentStats && (
-            <div className="pt-1">
-              <span className={`inline-flex items-center rounded-full px-3 py-1 text-sm font-medium ${pendingClients > 0 ? 'bg-amber-500/15 text-amber-700 dark:text-amber-400' : 'bg-green-500/15 text-green-700 dark:text-green-400'}`}>
-                {pendingClients}/{displayClients.length} Clientes Pendentes
-              </span>
-            </div>
-          )}
         </DialogHeader>
 
         {displayClients.length > 0 ? (
