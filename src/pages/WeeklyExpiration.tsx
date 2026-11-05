@@ -409,8 +409,8 @@ const WeeklyExpirationPage = () => {
                           ) : (
                             <>
                               <TableCell className="text-left">{formatDate(schedule.startDate)} - {formatDate(schedule.endDate)}</TableCell>
-                              <TableCell className="text-left">
-                                <Badge className={getStatusColor(dynamicStatus)}>
+                              <TableCell className="whitespace-nowrap text-left">
+                                <Badge className={`${getStatusColor(dynamicStatus)} whitespace-nowrap`}>
                                   {getStatusText(dynamicStatus)}
                                 </Badge>
                               </TableCell>
