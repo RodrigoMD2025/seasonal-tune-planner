@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
+import { PlaylistAdoptionCard } from "./PlaylistAdoptionCard";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useMemo, useState } from "react";
 import { CreateScheduleDialog } from "./CreateScheduleDialog";
@@ -26,6 +27,7 @@ interface Schedule {
   startDate: Timestamp | string;
   endDate: Timestamp | string;
   period: string;
+  broadcast?: string;
   validadeTratada?: boolean;
   veiculacaoTratada?: boolean;
   createdAt?: Timestamp | string;
@@ -390,6 +392,55 @@ const Dashboard = () => {
     };
   }, [allSchedules, clientNamesById, selectedWeek]);
 
+  const playlistAdoption = useMemo(() => {
+    const latestByClient = new Map<string, Schedule>();
+
+    allSchedules.forEach(schedule => {
+      const broadcast = schedule.broadcast?.trim();
+      if (broadcast !== 'Mesclada' && broadcast !== '100% Natal') return;
+
+      const clientKey = schedule.client || schedule.clientName || schedule.id;
+      const current = latestByClient.get(clientKey);
+      if (!current) {
+        latestByClient.set(clientKey, schedule);
+        return;
+      }
+
+      const scheduleCreatedAt = schedule.createdAt ? parseDate(schedule.createdAt) : null;
+      const currentCreatedAt = current.createdAt ? parseDate(current.createdAt) : null;
+      const scheduleStartDate = parseDate(schedule.startDate);
+      const currentStartDate = parseDate(current.startDate);
+      const scheduleReference = scheduleCreatedAt ?? scheduleStartDate;
+      const currentReference = currentCreatedAt ?? currentStartDate;
+
+      if ((scheduleReference?.getTime() ?? 0) > (currentReference?.getTime() ?? 0)) {
+        latestByClient.set(clientKey, schedule);
+      }
+    });
+
+    let mescladaCount = 0;
+    let natalCount = 0;
+
+    latestByClient.forEach(schedule => {
+      const broadcast = schedule.broadcast?.trim();
+      if (broadcast === 'Mesclada') mescladaCount += 1;
+      else if (broadcast === '100% Natal') natalCount += 1;
+    });
+
+    const totalClients = mescladaCount + natalCount;
+    const mescladaPercentage = totalClients > 0
+      ? Math.round((mescladaCount / totalClients) * 100)
+      : 0;
+
+    return {
+      mescladaCount,
+      natalCount,
+      totalClients,
+      mescladaPercentage,
+      natalPercentage: totalClients > 0 ? 100 - mescladaPercentage : 0,
+    };
+  }, [allSchedules]);
+
   const handlePreviousWeek = () => {
     setWeekReferenceDate(prev => addDays(prev, -7));
   };
@@ -573,6 +624,16 @@ const Dashboard = () => {
             })
           )}
         </div>
+
+        {!statsLoading && !statsError && (
+          <PlaylistAdoptionCard
+            mescladaCount={playlistAdoption.mescladaCount}
+            natalCount={playlistAdoption.natalCount}
+            totalClients={playlistAdoption.totalClients}
+            mescladaPercentage={playlistAdoption.mescladaPercentage}
+            natalPercentage={playlistAdoption.natalPercentage}
+          />
+        )}
 
         <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg w-fit">
           <Button variant={activeTab === "schedules" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("schedules")} className="px-6"><Calendar className="w-4 h-4 mr-2" />Agendamentos</Button>
