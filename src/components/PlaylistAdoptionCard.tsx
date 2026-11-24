@@ -2,12 +2,16 @@ import { BarChart3 } from "lucide-react";
 import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
+export type PlaylistFilter = "Mesclada" | "100% Natal";
+
 interface PlaylistAdoptionCardProps {
   mescladaCount: number;
   natalCount: number;
   totalClients: number;
   mescladaPercentage: number;
   natalPercentage: number;
+  activeFilter?: PlaylistFilter | null;
+  onSelect?: (filter: PlaylistFilter) => void;
 }
 
 interface AdoptionBarProps {
@@ -16,10 +20,29 @@ interface AdoptionBarProps {
   total: number;
   percentage: number;
   color: string;
+  isActive: boolean;
+  onSelect: () => void;
 }
 
-const AdoptionBar = ({ label, count, total, percentage, color }: AdoptionBarProps) => (
-  <div className="rounded-lg border border-border/50 bg-muted/20 p-4">
+const AdoptionBar = ({ label, count, total, percentage, color, isActive, onSelect }: AdoptionBarProps) => (
+  <div
+    role="button"
+    tabIndex={0}
+    aria-pressed={isActive}
+    title={`Filtrar agendamentos com playlist ${label}`}
+    onClick={onSelect}
+    onKeyDown={(event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        onSelect();
+      }
+    }}
+    className={`cursor-pointer rounded-lg border p-4 transition-all focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 ${
+      isActive
+        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+        : "border-border/50 bg-muted/20 hover:border-primary/40 hover:bg-muted/40"
+    }`}
+  >
     <div className="flex items-baseline justify-between gap-3">
       <span className="text-sm font-medium text-foreground">{label}</span>
       <span className="text-2xl font-bold text-foreground">{percentage}%</span>
@@ -55,6 +78,8 @@ export const PlaylistAdoptionCard = ({
   totalClients,
   mescladaPercentage,
   natalPercentage,
+  activeFilter = null,
+  onSelect,
 }: PlaylistAdoptionCardProps) => {
   return (
     <Card className="mb-8 shadow-sm border-border/50">
@@ -64,7 +89,7 @@ export const PlaylistAdoptionCard = ({
           Adoção de Playlists
         </CardTitle>
         <CardDescription>
-          Distribuição dos clientes pelo tipo do agendamento mais recente.
+          Distribuição dos clientes pelo tipo do agendamento mais recente. Clique em uma barra para filtrar os agendamentos.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -76,6 +101,8 @@ export const PlaylistAdoptionCard = ({
               total={totalClients}
               percentage={mescladaPercentage}
               color="#f59e0b"
+              isActive={activeFilter === "Mesclada"}
+              onSelect={() => onSelect?.("Mesclada")}
             />
             <AdoptionBar
               label="100% Natal"
@@ -83,6 +110,8 @@ export const PlaylistAdoptionCard = ({
               total={totalClients}
               percentage={natalPercentage}
               color="#16a34a"
+              isActive={activeFilter === "100% Natal"}
+              onSelect={() => onSelect?.("100% Natal")}
             />
           </div>
         ) : (

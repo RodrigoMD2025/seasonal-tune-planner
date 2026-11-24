@@ -3,17 +3,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Calendar, Music, Edit, Trash2, Loader2, Search } from "lucide-react";
+import { Calendar, Music, Edit, Trash2, Loader2, Search, Filter, X } from "lucide-react";
 import { formatDate } from "@/lib/date-utils";
 import { useToast } from "@/hooks/use-toast";
 import { collection, getDocs, Timestamp, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { EditScheduleDialog } from './EditScheduleDialog';
 import { ScheduleObservation } from './ScheduleObservation';
+import type { PlaylistFilter } from './PlaylistAdoptionCard';
 import { parse, endOfDay, isBefore, isAfter } from 'date-fns';
 
 interface Schedule {
   id: string;
+  client?: string;
   clientName: string;
   musicStyle: string;
   startDate: string | Timestamp;
@@ -26,6 +28,11 @@ interface Schedule {
   observation?: string;
 }
 
+interface ScheduleListProps {
+  playlistFilter?: PlaylistFilter | null;
+  onClearPlaylistFilter?: () => void;
+}
+
 const parseDate = (date: string | Timestamp): Date | null => {
   if (date instanceof Timestamp) return date.toDate();
   if (typeof date === 'string') {
@@ -34,6 +41,13 @@ const parseDate = (date: string | Timestamp): Date | null => {
     return isNaN(parsedDate.getTime()) ? null : parsedDate;
   }
   return null;
+};
+
+const getScheduleReferenceTime = (schedule: Schedule): number => {
+  const createdAt = schedule.createdAt ? parseDate(schedule.createdAt) : null;
+  if (createdAt) return createdAt.getTime();
+  const startDate = parseDate(schedule.startDate);
+  return startDate ? startDate.getTime() : 0;
 };
 
 const getDynamicStatus = (schedule: Schedule): Schedule['status'] => {
@@ -87,7 +101,7 @@ const getMusicStyleColor = (style: string) => {
   return "bg-blue-500 text-white";
 };
 
-export const ScheduleList = () => {
+export const ScheduleList = ({ playlistFilter = null, onClearPlaylistFilter }: ScheduleListProps) => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -133,7 +147,27 @@ export const ScheduleList = () => {
     setIsEditDialogOpen(true);
   };
 
-  const filteredSchedules = schedules.filter(schedule => {
+  const schedulesToDisplay = (() => {
+    if (!playlistFilter) return schedules;
+
+    const latestByClient = new Map<string, Schedule>();
+    schedules.forEach(schedule => {
+      const broadcast = schedule.broadcast?.trim();
+      if (broadcast !== 'Mesclada' && broadcast !== '100% Natal') return;
+
+      const clientKey = schedule.client || schedule.clientName || schedule.id;
+      const current = latestByClient.get(clientKey);
+      if (!current || getScheduleReferenceTime(schedule) > getScheduleReferenceTime(current)) {
+        latestByClient.set(clientKey, schedule);
+      }
+    });
+
+    return Array.from(latestByClient.values()).filter(
+      schedule => schedule.broadcast?.trim() === playlistFilter,
+    );
+  })();
+
+  const filteredSchedules = schedulesToDisplay.filter(schedule => {
     const lowerCaseSearchTerm = searchTerm.toLowerCase();
     const formattedStartDate = formatDate(schedule.startDate).toLowerCase();
     const formattedEndDate = formatDate(schedule.endDate).toLowerCase();
@@ -167,6 +201,28 @@ export const ScheduleList = () => {
           </div>
         </div>
       </div>
+
+      {playlistFilter && (
+        <div className="mb-6 flex flex-col gap-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-2 text-sm">
+            <Filter className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+            <p className="text-foreground">
+              <span className="font-medium">{schedulesToDisplay.length} {schedulesToDisplay.length === 1 ? 'cliente' : 'clientes'}</span>
+              {' '}com playlist <span className="font-medium">{playlistFilter}</span>.
+              <span className="text-muted-foreground"> Exibindo o agendamento mais recente de cada cliente.</span>
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onClearPlaylistFilter}
+            className="h-8 shrink-0 gap-1 self-start text-muted-foreground hover:text-foreground sm:self-auto"
+          >
+            <X className="h-4 w-4" />
+            Limpar filtro
+          </Button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {filteredSchedules.map((schedule) => {
@@ -225,11 +281,15 @@ export const ScheduleList = () => {
       {filteredSchedules.length === 0 && !loading && (
         <div className="text-center py-12">
           <Calendar className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-foreground mb-2">Nenhum agendamento encontrado</h3>
+          <h3 className="text-lg font-medium text-foreground mb-2">
+            {playlistFilter ? "Nenhum cliente encontrado" : "Nenhum agendamento encontrado"}
+          </h3>
           <p className="text-muted-foreground mb-4">
             {searchTerm
-              ? `Nenhum resultado para "${searchTerm}".`
-              : "Crie um agendamento para vê-lo aqui."}
+              ? `Nenhum resultado para "${searchTerm}"${playlistFilter ? ` no filtro ${playlistFilter}` : ''}.`
+              : playlistFilter
+                ? `Nenhum cliente com playlist ${playlistFilter}.`
+                : "Crie um agendamento para vê-lo aqui."}
           </p>
         </div>
       )}

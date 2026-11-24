@@ -4,9 +4,9 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Users, Plus, FileSpreadsheet, Loader2, AlertTriangle, ArrowRight, PieChart as PieChartIcon, LogOut, RefreshCw, PlayCircle, Settings, ChevronLeft, ChevronRight } from "lucide-react";
 import { ScheduleList } from "./ScheduleList";
 import { ClientList } from "./ClientList";
-import { PlaylistAdoptionCard } from "./PlaylistAdoptionCard";
+import { PlaylistAdoptionCard, type PlaylistFilter } from "./PlaylistAdoptionCard";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CreateScheduleDialog } from "./CreateScheduleDialog";
 import { ImportClientsDialog } from "./ImportClientsDialog";
 import { ReportGenerator } from "./ReportGenerator";
@@ -225,6 +225,8 @@ const Dashboard = () => {
   const [allSchedules, setAllSchedules] = useState<Schedule[]>([]);
   const [clientNamesById, setClientNamesById] = useState<Map<string, string>>(() => new Map());
   const [dayDialog, setDayDialog] = useState<{ data: BarChartDataPoint; mode: DayDialogMode } | null>(null);
+  const [playlistFilter, setPlaylistFilter] = useState<PlaylistFilter | null>(null);
+  const schedulesSectionRef = useRef<HTMLDivElement | null>(null);
 
   const initialStats: DashboardStat[] = [
     { title: "Validade Próxima (Semana)", value: "0", description: "Carregando...", icon: AlertTriangle },
@@ -457,6 +459,14 @@ const Dashboard = () => {
     setDayDialog({ data: entry, mode });
   };
 
+  const handlePlaylistFilterSelect = (filter: PlaylistFilter) => {
+    setPlaylistFilter(current => current === filter ? null : filter);
+    setActiveTab("schedules");
+    requestAnimationFrame(() => {
+      schedulesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-subtle">
       <header className="bg-card border-b border-border shadow-sm">
@@ -632,17 +642,22 @@ const Dashboard = () => {
             totalClients={playlistAdoption.totalClients}
             mescladaPercentage={playlistAdoption.mescladaPercentage}
             natalPercentage={playlistAdoption.natalPercentage}
+            activeFilter={playlistFilter}
+            onSelect={handlePlaylistFilterSelect}
           />
         )}
 
-        <div className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg w-fit">
+        <div ref={schedulesSectionRef} className="flex space-x-1 mb-6 bg-muted p-1 rounded-lg w-fit scroll-mt-6">
           <Button variant={activeTab === "schedules" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("schedules")} className="px-6"><Calendar className="w-4 h-4 mr-2" />Agendamentos</Button>
           <Button variant={activeTab === "clients" ? "default" : "ghost"} size="sm" onClick={() => setActiveTab("clients")} className="px-6"><Users className="w-4 h-4 mr-2" />Clientes</Button>
         </div>
 
         <div className="scroll-mt-6 bg-card rounded-lg shadow-sm border border-border/50">
           {activeTab === "schedules" && (
-            <ScheduleList />
+            <ScheduleList
+              playlistFilter={playlistFilter}
+              onClearPlaylistFilter={() => setPlaylistFilter(null)}
+            />
           )}
           {activeTab === "clients" && <ClientList />}
         </div>
